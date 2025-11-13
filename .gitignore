@@ -55,3 +55,6 @@ logs/
 *.tmp
 *.bak
 *.old
+
+# Материалы курса
+course
