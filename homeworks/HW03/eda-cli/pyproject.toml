@@ -3,9 +3,9 @@ requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "s03"
+name = "HW03"
 version = "0.1.0"
-description = "Add your description here"
+description = "HW03: EDA-cli tool for data analysis"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

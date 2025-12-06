@@ -67,7 +67,8 @@ def report(
     sep: str = typer.Option(",", help="Разделитель в CSV."),
     encoding: str = typer.Option("utf-8", help="Кодировка файла."),
     max_hist_columns: int = typer.Option(6, help="Максимум числовых колонок для гистограмм."),
-    top_k_categories: int = typer.Option(5, help="Количество топ-категорий.")
+    top_k_categories: int = typer.Option(5, help="Количество топ-категорий."),
+    title: str = typer.Option("# EDA-отчёт", help="Заголовок отчёта в начале report.md")
 ) -> None:
     """
     Сгенерировать полный EDA-отчёт:
@@ -103,7 +104,7 @@ def report(
     # 4. Markdown-отчёт
     md_path = out_root / "report.md"
     with md_path.open("w", encoding="utf-8") as f:
-        f.write(f"# EDA-отчёт\n\n")
+        f.write(f"{title}\n\n")
         f.write(f"Исходный файл: `{Path(path).name}`\n\n")
         f.write(f"Строк: **{summary.n_rows}**, столбцов: **{summary.n_cols}**\n\n")
 
@@ -151,6 +152,21 @@ def report(
     typer.echo("- Табличные файлы: summary.csv, missing.csv, correlation.csv, top_categories/*.csv")
     typer.echo("- Графики: hist_*.png, missing_matrix.png, correlation_heatmap.png")
 
+@app.command()
+def head(
+    path: str = typer.Argument(..., help="Путь к CSV-файлу."),
+    sep: str = typer.Option(",", help="Разделитель в CSV."),
+    encoding: str = typer.Option("utf-8", help="Кодировка файла."),
+    n: int = typer.Option(5, help="Количество первых строк датасета")
+) -> None:
+    """
+    Напечатать первые n колонки датасета
+    """
+
+    df = _load_csv(Path(path), sep=sep, encoding=encoding)
+
+    typer.echo(f"Первые {n} колонки датасета {Path(path).name}\n")
+    typer.echo(df.head(n))
 
 if __name__ == "__main__":
     app()
