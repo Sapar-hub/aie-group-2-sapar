@@ -60,4 +60,4 @@ logs/
 course
 
 # Remove all left report files/dir
-report[_s]* */        
+report*        
