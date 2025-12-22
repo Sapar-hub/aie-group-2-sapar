@@ -9,5 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Remove all left report files/dir
-report[_s]* */
+# Remove report dir
+report*

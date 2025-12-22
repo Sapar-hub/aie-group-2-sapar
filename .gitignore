@@ -58,3 +58,6 @@ logs/
 
 # Материалы курса
 course
+
+# Remove all left report files/dir
+report[_s]* */        
