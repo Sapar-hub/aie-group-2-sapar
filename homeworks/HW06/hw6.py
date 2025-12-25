@@ -1,7 +1,7 @@
 import nbformat as nbf
 
 # New notebook for writing everythint in notebook. I am too lazy to use VSCODE
-# So writing scripts to save it as ipynb file. That is to awesome if u ask me. And Yes I AM A VIM USER!!!! LESSGOOO
+# So writing scripts to save it as ipynb file. That is too awesome if u ask me. And Yes I AM A VIM USER!!!! LESSGOOO
 
 nb = nbf.v4.new_notebook()
 
