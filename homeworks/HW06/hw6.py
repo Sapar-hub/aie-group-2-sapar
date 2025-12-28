@@ -62,7 +62,8 @@ nb.cells.append(nbf.v4.new_markdown_cell(
 
 # """"""" 3 """""""
 # """" 3.1  """"
-nb.cells.append(nbf.v4.new_markdown_cell("# 3. Baseline’ы\n## DummyClassifier"))
+nb.cells.append(nbf.v4.new_markdown_cell(
+    "# 3. Baseline’ы\n## DummyClassifier"))
 
 code3_1 = """ # Классификатор
 dummCls = DummyClassifier(strategy="most_frequent")
@@ -90,9 +91,9 @@ pipe.score(x_test,y_test)
 """
 nb.cells.append(nbf.v4.new_code_cell(code3_2))
 
-nb.cells.append(nbf.v4.new_markdown_cell("Здесь должна быть краткая интерпретация метрик и моделей"))
+nb.cells.append(nbf.v4.new_markdown_cell(
+    "Здесь должна быть краткая интерпретация метрик и моделей"))
 
 # Save it as ipynb
 with open('HW06.ipynb', 'w') as f:
     nbf.write(nb, f)
-
