@@ -1,0 +1,12 @@
+{
+    "dataset": "STL10",
+    "architecture": "ResNet18 (Pretrained, Fine-tune layer4+fc)",
+    "transforms_train": "Compose(\n    Resize(size=(224, 224), interpolation=bilinear, max_size=None, antialias=True)\n    ToTensor()\n    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])\n)",
+    "transforms_val": "Compose(\n    Resize(size=(224, 224), interpolation=bilinear, max_size=None, antialias=True)\n    ToTensor()\n    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])\n)",
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "epochs_trained": 2,
+    "seed": 42,
+    "best_val_accuracy": 0.9828,
+    "test_accuracy": 0.911375
+}
