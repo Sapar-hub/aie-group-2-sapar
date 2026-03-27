@@ -1,0 +1,1 @@
+"experiment_id","task","dataset","seed","split_summary","window_size","horizon","model_summary","features_summary","scaler","optimizer","lr","epochs_trained","best_val_mae","best_val_rmse","best_val_mape","test_mae","test_rmse","test_mape","notes"
