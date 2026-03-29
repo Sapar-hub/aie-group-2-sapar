@@ -1,0 +1,12 @@
+{
+    "dataset": "STL10",
+    "architecture": "SimpleCNN (Base Transforms)",
+    "transforms_train": "N/A",
+    "transforms_val": "N/A",
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "epochs_trained": 2,
+    "seed": 42,
+    "best_val_accuracy": 0.461,
+    "test_accuracy": 0.472875
+}

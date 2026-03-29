@@ -1,7 +1,7 @@
-"experiment_id","task","dataset","seed","model_summary","optimizer","lr","epochs_trained","best_val_accuracy","test_accuracy","precision","recall","mean_iou","notes"
-C1,classification,STL10,42,SimpleCNN (Base Transforms),Adam,0.001,2,0.449,0.445125,,,,
-C2,classification,STL10,42,SimpleCNN (Augmented Transforms),Adam,0.001,2,0.375,0.401875,,,,
-C3,classification,STL10,42,"ResNet18 (Pretrained, Head-Only)",Adam,0.001,2,0.9472,0.935875,,,,
-C4,classification,STL10,42,"ResNet18 (Pretrained, Fine-tune layer4+fc)",Adam,0.001,2,0.9828,0.911375,,,,
-V1,detection,Pascal VOC,42,FasterRCNN_ResNet50_FPN (Pretrained),N/A,N/A,N/A,N/A,N/A,0.5,0.5,0.5,Inference with score_threshold = 0.3
-V2,detection,Pascal VOC,42,FasterRCNN_ResNet50_FPN (Pretrained),N/A,N/A,N/A,N/A,N/A,0.5,0.5,0.5,Inference with score_threshold = 0.7
+experiment_id,task,dataset,seed,model_summary,optimizer,lr,epochs_trained,best_val_accuracy,test_accuracy,precision,recall,mean_iou,notes
+C1,classification,STL10,42,SimpleCNN (Base Transforms),Adam,0.001,2,0.461,0.472875,,,,
+C2,classification,STL10,42,SimpleCNN (Augmented Transforms),Adam,0.001,2,0.391,0.406375,,,,
+C3,classification,STL10,42,"ResNet18 (Pretrained, Head-Only)",Adam,0.001,2,0.926,0.92675,,,,
+C4,classification,STL10,42,"ResNet18 (Pretrained, Fine-tune layer4+fc)",Adam,0.001,2,0.918,0.91625,,,,
+V1,detection,Pascal VOC,42,FasterRCNN_ResNet50_FPN (Pretrained),N/A,N/A,N/A,N/A,N/A,0.2727272727272727,0.9044117647058824,tensor(0.8076),Inference with score_threshold = 0.3
+V2,detection,Pascal VOC,42,FasterRCNN_ResNet50_FPN (Pretrained),N/A,N/A,N/A,N/A,N/A,0.5223214285714286,0.8602941176470589,tensor(0.8090),Inference with score_threshold = 0.7
