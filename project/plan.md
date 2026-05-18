@@ -1,0 +1,103 @@
+# Plan: Stamp Detection — Hybrid YOLO + CV
+
+## Goal
+
+Build and compare 4 approaches for GOST stamp detection on construction drawings, then combine the best CNN with CV refinement into a hybrid. Deploy as a FastAPI service.
+
+---
+
+## Approaches
+
+| # | Approach | Type | Training Data |
+|---|---|---|---|
+| 1 | **CV Baseline** (contours, template matching, color thresholding) | Classical | None |
+| 2 | **YOLOv8/v11** | One-stage CNN | 49 real + synthetic |
+| 3 | **Faster R-CNN** | Two-stage CNN | 49 real + synthetic |
+| 4 | **DETR** | Transformer detector | 49 real + synthetic |
+| 5 | **Hybrid** (best CNN → CV refine) | Combined | Best config from above |
+
+## Experiments
+
+Each CNN approach has 3 variants:
+- **No augmentation** — train on 49 images only
+- **Augmentation only** — train on 49 images with augmentations
+- **Augmentation + synthetic** — train on 49 + 500+ synthetic images
+
+Plus hybrid variants for each best CNN config.
+
+Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
+
+---
+
+## Protocol
+
+- **Cross-validation:** 5-fold on the 49 labeled images
+- **Synthetic generation:** Crop stamp regions → paste onto non-stamp drawing regions with random transforms (rotation, scale, brightness)
+- **Augmentations:** Horizontal flip, rotation ±15°, scale jitter, brightness/contrast, cutout
+- **Primary metric:** IoU (Intersection over Union)
+- **Secondary metrics:** Precision, Recall, F1, inference time
+- **Statistical test:** Paired Wilcoxon across folds to justify model selection
+
+---
+
+## Implementation Order
+
+### Phase 1: Data Pipeline
+- [ ] `src/data/loader.py` — load images + YOLO labels, visualize
+- [ ] `src/data/augment.py` — augmentation transforms
+- [ ] `src/data/synthetic.py` — synthetic data generation pipeline
+- [ ] `scripts/generate_synthetic.py` — CLI to generate dataset
+- [ ] `notebooks/01_data_exploration.ipynb` — image stats, label distribution, visualizations
+
+### Phase 2: CV Baseline
+- [ ] `src/models/cv_baseline.py` — contour detection, template matching, color-based
+- [ ] `notebooks/02_cv_baseline.ipynb` — results, parameter sweeps, failure analysis
+
+### Phase 3: YOLO Experiments
+- [ ] `src/models/yolo_model.py` — train/inference wrapper
+- [ ] `notebooks/03_yolo_experiments.ipynb` — 3 variants, 5-fold CV results
+
+### Phase 4: Faster R-CNN Experiments
+- [ ] `src/models/rcnn_model.py` — train/inference wrapper
+- [ ] `notebooks/04_faster_rcnn.ipynb` — 3 variants, 5-fold CV results
+
+### Phase 5: DETR Experiments (stretch)
+- [ ] `src/models/detr_model.py` — train/inference wrapper
+- [ ] `notebooks/05_detr.ipynb` — 3 variants, 5-fold CV results
+
+### Phase 6: Hybrid
+- [ ] `src/hybrid/refiner.py` — CV post-processing of CNN proposals
+- [ ] `notebooks/06_hybrid.ipynb` — all hybrid variants
+
+### Phase 7: Comparison
+- [ ] `notebooks/07_comparison.ipynb` — aggregate metrics, statistical tests, plots
+- [ ] `src/evaluation/metrics.py` — reusable metric computation
+
+### Phase 8: API Service
+- [ ] `src/api/main.py` — FastAPI app
+- [ ] `src/api/schemas.py` — Pydantic request/response
+- [ ] `src/api/router.py` — /predict endpoint
+
+### Phase 9: Project Infrastructure
+- [ ] `configs/config.yaml` — all paths, model params, experiment config
+- [ ] `configs/.env.example` — template for secrets
+- [ ] `requirements.txt` — pinned dependencies
+- [ ] `pyproject.toml` — package metadata + CLI entry points
+- [ ] `tests/test_metrics.py` — IoU calculation tests
+- [ ] `tests/test_pipeline.py` — end-to-end sanity checks
+
+### Phase 10: Documentation
+- [ ] `report.md` — fill with results and analysis
+- [ ] `self-checklist.md` — complete self-check
+- [ ] `README.md` — updated with final commands
+
+---
+
+## Risks
+
+| Risk | Mitigation |
+|---|---|
+| DETR won't converge on 49 images | Make DETR a stretch goal; drop if results are worse than random |
+| Synthetic data looks unrealistic | Randomize background patches; use multiple non-stamp regions |
+| 80 training runs is time-consuming | YOLO is fast (minutes/run); R-CNN moderate; DETR slowest. Run overnight. |
+| IoU metric is noisy with small data | 5-fold CV gives 5 estimates per config; use Wilcoxon for claims |
