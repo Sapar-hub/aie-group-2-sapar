@@ -41,7 +41,7 @@ project/
 │   ├── synthetic/                # Синтетические данные
 │   └── labels/test/              # 49 YOLO-разметок
 ├── notebooks/
-│   ├── 01_data_exploration.ipynb
+│   ├── 01_eda.ipynb
 │   ├── 02_cv_baseline.ipynb
 │   ├── 03_yolo_experiments.ipynb
 │   ├── 04_faster_rcnn.ipynb

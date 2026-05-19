@@ -47,7 +47,7 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 - [ ] `src/data/augment.py` — augmentation transforms
 - [ ] `src/data/synthetic.py` — synthetic data generation pipeline
 - [ ] `scripts/generate_synthetic.py` — CLI to generate dataset
-- [ ] `notebooks/01_data_exploration.ipynb` — image stats, label distribution, visualizations
+- [ ] `notebooks/01_data_exploration.ipynb` — image stats, label distribution, PPI analysis, visualizations
 
 ### Phase 2: CV Baseline
 - [ ] `src/models/cv_baseline.py` — contour detection, template matching, color-based
@@ -93,6 +93,49 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 
 ---
 
+---
+
+## PPI (Pixels Per Inch) Detection
+
+### Terminology
+- **DPI** (Dots Per Inch) — scanner setting, used when printing
+- **PPI** (Pixels Per Inch) — digital image property
+- For scanned technical drawings: PPI = DPI (these terms are often used interchangeably, but PPI is more accurate for digital)
+
+### Detection Logic (priority order)
+
+1. **Metadata extraction** (via `PIL.Image.info['dpi']`)
+   - If present and reasonable → use it
+   - Scanner settings are usually correct for full-page scans
+
+2. **ISO 216 inference** (dimension-based)
+   - Match image dimensions to standard A-series paper sizes (A1, A2, A3, A4)
+   - Use aspect ratio √2 (≈1.414) to identify paper size
+   - Calculate: `Spacing (mm/pixel) = Physical Width (mm) / Pixel Width`
+
+   ```
+   A4: 210×297 mm
+   A3: 297×420 mm
+   A2: 420×594 mm
+   A1: 594×841 mm
+   ```
+
+3. **Contradiction handling**
+   - Metadata exists + dimensions suggest different PPI → check tolerance (±10%)
+   - If contradiction → trust inference (dimensions are more "honest" after resize/compression)
+   - Validate via stamp size: stamp in mm should be consistent across images
+
+### Validation in EDA
+
+`notebooks/01_data_exploration.ipynb` should include:
+
+1. **PPI Distribution** — how many images have metadata vs inference
+2. **Contradiction Analysis** — when do they conflict?
+3. **Accuracy Check** — does stamp size in mm stay consistent?
+4. **Edge Cases** — non-standard paper sizes, cropped images
+
+---
+
 ## Risks
 
 | Risk | Mitigation |
@@ -101,3 +144,4 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 | Synthetic data looks unrealistic | Randomize background patches; use multiple non-stamp regions |
 | 80 training runs is time-consuming | YOLO is fast (minutes/run); R-CNN moderate; DETR slowest. Run overnight. |
 | IoU metric is noisy with small data | 5-fold CV gives 5 estimates per config; use Wilcoxon for claims |
+| PPI metadata contradictory | Use dimension-based inference as fallback, validate via stamp size consistency |
