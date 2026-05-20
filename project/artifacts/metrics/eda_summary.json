@@ -1,0 +1,35 @@
+{
+  "n_images": 49,
+  "n_images_with_ppi_metadata": 27,
+  "ppi_method_counts": {
+    "metadata": 23,
+    "no_ppi_available": 22,
+    "iso_inference_mismatch": 2,
+    "iso_inference": 2
+  },
+  "paper_sizes": {
+    "A1": 2,
+    "A0": 2
+  },
+  "resolution": {
+    "width_mean": 5244.3,
+    "width_std": 3182.2,
+    "height_mean": 4172.8,
+    "height_std": 2877.6
+  },
+  "aspect_ratio": {
+    "mean": 1.318,
+    "std": 0.298,
+    "min": 0.706,
+    "max": 2.121
+  },
+  "stamps": {
+    "n_stamps": 49,
+    "width_px_mean": 1725.6,
+    "width_px_std": 1286.4,
+    "height_px_mean": 475.4,
+    "height_px_std": 312.8,
+    "aspect_ratio_mean": 3.546,
+    "aspect_ratio_std": 0.414
+  }
+}

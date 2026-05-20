@@ -13,10 +13,12 @@ def load_yolo_labels(label_path: Path) -> np.ndarray:
 
 
 def load_image_and_labels(image_path: Path, label_dir: Path) -> Tuple[np.ndarray, np.ndarray]:
-    matching_label_files = list(label_dir.glob(f"*-{image_path.stem}.txt"))
-    if not matching_label_files:
-        raise FileNotFoundError(f"Label file for {image_path.name} not found in {label_dir}")
-    label_path = matching_label_files[0]
+    label_path = label_dir / f"{image_path.stem}.txt"
+    if not label_path.exists():
+        matching_label_files = list(label_dir.glob(f"*-{image_path.stem}.txt"))
+        if not matching_label_files:
+            raise FileNotFoundError(f"Label file for {image_path.name} not found in {label_dir}")
+        label_path = matching_label_files[0]
 
     image = cv2.imread(str(image_path))
     if image is None:
