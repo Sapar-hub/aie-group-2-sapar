@@ -1,0 +1,44 @@
+DATA_DIR: data
+
+paths:
+  images_test: data/images/test
+  labels_test: data/labels/test
+  images_train: data/images/train
+  labels_train: data/labels/train
+  artifacts: artifacts
+  synthetic_output: data/synthetic
+
+model:
+  classes:
+    - stamp
+
+cv_baseline:
+  expected_aspect_ratio: 3.55
+  ar_tolerance: 0.25
+  min_width_px: 100
+  min_height_px: 30
+  block_size: 11
+  adaptive_threshold_c: 5
+
+yolo:
+  model_name: yolov8n
+  epochs: 50
+  imgsz: 640
+  batch: 16
+  device: cpu
+
+rcnn:
+  num_epochs: 30
+  batch_size: 4
+  learning_rate: 0.001
+  imgsz: 640
+
+hybrid:
+  iou_threshold: 0.3
+  ar_refine_tolerance: 0.15
+
+evaluation:
+  iou_thresholds:
+    - 0.3
+    - 0.5
+    - 0.75

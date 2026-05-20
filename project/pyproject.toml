@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gost-stamp-detector"
+version = "1.0.0"
+description = "GOST stamp detection on construction drawings using hybrid YOLO + CV"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "cv2>=4.8.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "scikit-learn>=1.3.0",
+    "pandas>=2.0.0",
+    "pillow>=10.0.0",
+    "ultralytics>=8.0.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.30.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.scripts]
+gost-detect = "src.api.main:main"
+gost-generate = "scripts.generate_synthetic:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

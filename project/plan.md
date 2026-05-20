@@ -51,27 +51,27 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 - [x] `notebooks/exp02_synthetic_data.ipynb` — synthetic data exploration
 
 ### Phase 2: CV Baseline
-- [ ] `src/models/cv_baseline.py` — contour detection, template matching, color-based
-- [ ] `notebooks/02_cv_baseline.ipynb` — results, parameter sweeps, failure analysis
+- [x] `src/models/cv_baseline.py` — contour detection, template matching, color-based
+- [x] `notebooks/exp03_cv_baseline.ipynb` — results, parameter sweeps, failure analysis
 
 ### Phase 3: YOLO Experiments
 - [ ] `src/models/yolo_model.py` — train/inference wrapper
-- [ ] `notebooks/03_yolo_experiments.ipynb` — 3 variants, 5-fold CV results
+- [ ] `notebooks/exp04_yolo_experiments.ipynb` — 3 variants, 5-fold CV results
 
 ### Phase 4: Faster R-CNN Experiments
 - [ ] `src/models/rcnn_model.py` — train/inference wrapper
-- [ ] `notebooks/04_faster_rcnn.ipynb` — 3 variants, 5-fold CV results
+- [ ] `notebooks/exp05_faster_rcnn.ipynb` — 3 variants, 5-fold CV results
 
 ### Phase 5: DETR Experiments (stretch)
 - [ ] `src/models/detr_model.py` — train/inference wrapper
-- [ ] `notebooks/05_detr.ipynb` — 3 variants, 5-fold CV results
+- [ ] `notebooks/exp06_detr.ipynb` — 3 variants, 5-fold CV results
 
 ### Phase 6: Hybrid
 - [ ] `src/hybrid/refiner.py` — CV post-processing of CNN proposals
-- [ ] `notebooks/06_hybrid.ipynb` — all hybrid variants
+- [ ] `notebooks/exp07_hybrid.ipynb` — all hybrid variants
 
 ### Phase 7: Comparison
-- [ ] `notebooks/07_comparison.ipynb` — aggregate metrics, statistical tests, plots
+- [ ] `notebooks/exp08_comparison.ipynb` — aggregate metrics, statistical tests, plots
 - [ ] `src/evaluation/metrics.py` — reusable metric computation
 
 ### Phase 8: API Service
@@ -80,10 +80,10 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 - [ ] `src/api/router.py` — /predict endpoint
 
 ### Phase 9: Project Infrastructure
-- [ ] `configs/config.yaml` — all paths, model params, experiment config
-- [ ] `configs/.env.example` — template for secrets
-- [ ] `requirements.txt` — pinned dependencies
-- [ ] `pyproject.toml` — package metadata + CLI entry points
+- [x] `configs/config.yaml` — all paths, model params, experiment config
+- [x] `configs/.env.example` — template for secrets
+- [x] `requirements.txt` — pinned dependencies
+- [x] `pyproject.toml` — package metadata + CLI entry points
 - [ ] `tests/test_metrics.py` — IoU calculation tests
 - [ ] `tests/test_pipeline.py` — end-to-end sanity checks
 
