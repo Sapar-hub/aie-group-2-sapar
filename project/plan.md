@@ -43,11 +43,12 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 ## Implementation Order
 
 ### Phase 1: Data Pipeline
-- [ ] `src/data/loader.py` — load images + YOLO labels, visualize
-- [ ] `src/data/augment.py` — augmentation transforms
-- [ ] `src/data/synthetic.py` — synthetic data generation pipeline
-- [ ] `scripts/generate_synthetic.py` — CLI to generate dataset
-- [ ] `notebooks/01_data_exploration.ipynb` — image stats, label distribution, PPI analysis, visualizations
+- [x] `src/data/loader.py` — load images + YOLO labels, visualize
+- [x] `src/data/augment.py` — augmentation transforms
+- [x] `src/data/synthetic.py` — synthetic data generation pipeline (GOST + copy-paste)
+- [x] `scripts/generate_synthetic.py` — CLI to generate dataset
+- [x] `notebooks/exp01_eda_baseline.ipynb` — EDA: image stats, label distribution, PPI analysis
+- [x] `notebooks/exp02_synthetic_data.ipynb` — synthetic data exploration
 
 ### Phase 2: CV Baseline
 - [ ] `src/models/cv_baseline.py` — contour detection, template matching, color-based

@@ -1,27 +1,270 @@
+import random
+from pathlib import Path
+from typing import List, Tuple
+
 import cv2
 import numpy as np
-from pathlib import Path
-import random
-from typing import List, Tuple, Optional
-from dataclasses import dataclass
-
-from .augment import apply_augmentations
+from PIL import Image, ImageDraw, ImageFont
 
 
-@dataclass
-class StampInfo:
-    image: np.ndarray
-    original_ppi: float
-    original_size_px: Tuple[int, int]
-    original_size_mm: Tuple[float, float]
+GOST_FORMS = {
+    "FORM_3": {"name": "Форма 3", "width_mm": 185, "height_mm": 55},
+}
 
-    @property
-    def aspect_ratio(self) -> float:
-        w, h = self.original_size_px
-        return w / h if h > 0 else 1.0
+PAPER_SIZES = {
+    "A3": (297, 420),
+    "A4": (210, 297),
+}
 
+
+def mm_to_pixels(mm: float, dpi: int) -> int:
+    return int(mm * dpi / 25.4)
+
+
+def get_font_path() -> str:
+    fonts = [
+        "/usr/share/fonts/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for fp in fonts:
+        if Path(fp).exists():
+            return fp
+    return ""
+
+
+def draw_russian_text(img_array: np.ndarray, text: str, pos: Tuple[int, int], font_size: int) -> np.ndarray:
+    img_pil = Image.fromarray(img_array)
+    draw = ImageDraw.Draw(img_pil)
+    try:
+        font = ImageFont.truetype(get_font_path(), font_size) if get_font_path() else ImageFont.load_default()
+    except:
+        font = ImageFont.load_default()
+    draw.text(pos, text, font=font, fill=(0, 0, 0))
+    return np.array(img_pil)
+
+
+def create_stamp_grid(form_name: str, dpi: int) -> np.ndarray:
+    form = GOST_FORMS[form_name]
+    w = mm_to_pixels(form["width_mm"], dpi)
+    h = mm_to_pixels(form["height_mm"], dpi)
+    img = np.ones((h, w, 3), dtype=np.uint8) * 255
+
+    rows, cols = (8, 9) if "FORM_4" in form_name else (5, 15 if "FORM_5" in form_name else 9)
+    cell_w = w // cols
+    cell_h = h // rows
+    thickness = max(1, dpi // 100)
+
+    for i in range(rows + 1):
+        cv2.line(img, (0, i * cell_h), (w, i * cell_h), (0, 0, 0), thickness)
+    for j in range(cols + 1):
+        cv2.line(img, (j * cell_w, 0), (j * cell_w, h), (0, 0, 0), thickness)
+
+    font_size = max(28, dpi // 8)
+    texts = ["ИЗМ", "Лист", "№ докум.", "Подпись", "Дата"]
+    for i, text in enumerate(texts[:rows]):
+        img = draw_russian_text(img, text, (cell_w // 4, i * cell_h + cell_h // 2 - font_size // 2), font_size)
+
+    for j in range(min(cols, 3)):
+        img = draw_russian_text(img, str(j + 1), (j * cell_w + cell_w // 2 - 10, cell_h // 2 - font_size // 2), font_size)
+
+    for i in range(rows):
+        for j in range(cols):
+            if random.random() < 0.3:
+                txt = random.choice(["", "А", "Б", "В", "Г", "1", "2", "3"])
+                if txt:
+                    img = draw_russian_text(img, txt, (j * cell_w + cell_w // 4, i * cell_h + cell_h // 2 - font_size // 2), font_size)
+
+    return img
+
+
+def add_drawing_content(img: np.ndarray, dpi: int) -> np.ndarray:
+    h, w = img.shape[:2]
+    img_pil = Image.fromarray(img)
+    draw = ImageDraw.Draw(img_pil)
+    color = (random.randint(100, 180),) * 3
+
+    for _ in range(50):
+        el = random.choice(["line", "circle", "rect"])
+        if el == "line":
+            x1, y1 = random.randint(50, w-50), random.randint(50, h-50)
+            x2, y2 = random.randint(50, w-50), random.randint(50, h-50)
+            draw.line([(x1, y1), (x2, y2)], fill=color, width=max(1, dpi//300))
+        elif el == "circle":
+            r = random.randint(20, min(w, h)//8)
+            cx, cy = random.randint(100, w-100), random.randint(100, h-100)
+            draw.ellipse([cx-r, cy-r, cx+r, cy+r], outline=color, width=2)
+        else:
+            x, y = random.randint(50, w-100), random.randint(50, h-100)
+            draw.rectangle([x, y, x+random.randint(50, 200), y+random.randint(50, 200)], outline=color, width=2)
+
+    return np.array(img_pil)
+
+
+def add_artifacts(img: np.ndarray, level: str = "medium") -> np.ndarray:
+    s, b, r = {"low": (3, 0.2, 1), "medium": (5, 0.3, 2), "high": (10, 0.5, 3)}.get(level, (5, 0.3, 2))
+
+    noise = np.random.normal(0, s, img.shape)
+    img = np.clip(img + noise, 0, 255).astype(np.uint8)
+
+    if random.random() < b:
+        img = cv2.GaussianBlur(img, (3, 3), 0)
+
+    angle = random.uniform(-r, r)
+    M = cv2.getRotationMatrix2D((img.shape[1]//2, img.shape[0]//2), angle, 1.0)
+    img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), borderMode=cv2.BORDER_REPLICATE)
+
+    return img
+
+
+def generate_synthetic_image(
+    form_name: str = None,
+    dpi: int = 200,
+    paper_size: str = None,
+    corner: str = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    form_name = form_name or random.choice(list(GOST_FORMS.keys()))
+    paper_size = paper_size or random.choice(list(PAPER_SIZES.keys()))
+    corner = corner or random.choice(["bottom_right", "bottom_left", "top_right", "top_left"])
+
+    form = GOST_FORMS[form_name]
+    w_mm, h_mm = PAPER_SIZES[paper_size]
+
+    canvas_w = mm_to_pixels(w_mm, dpi)
+    canvas_h = mm_to_pixels(h_mm, dpi)
+
+    if random.random() < 0.5:
+        canvas_w, canvas_h = canvas_h, canvas_w
+
+    canvas = np.ones((canvas_h, canvas_w, 3), dtype=np.uint8) * 255
+    canvas = add_drawing_content(canvas, dpi)
+
+    stamp = create_stamp_grid(form_name, dpi)
+    stamp_h, stamp_w = stamp.shape[:2]
+
+    margin = 50
+    corners = {
+        "bottom_right": (max(0, canvas_w - stamp_w - margin), max(0, canvas_h - stamp_h - margin)),
+        "bottom_left": (margin, max(0, canvas_h - stamp_h - margin)),
+        "top_right": (max(0, canvas_w - stamp_w - margin), margin),
+        "top_left": (margin, margin),
+    }
+    x, y = corners[corner]
+
+    stamp_h_f = min(stamp_h, canvas_h - y)
+    stamp_w_f = min(stamp_w, canvas_w - x)
+    canvas[y:y+stamp_h_f, x:x+stamp_w_f] = stamp[:stamp_h_f, :stamp_w_f]
+
+    canvas = add_artifacts(canvas, random.choice(["low", "medium", "high"]))
+
+    label = np.array([
+        0,
+        (x + stamp_w_f / 2) / canvas_w,
+        (y + stamp_h_f / 2) / canvas_h,
+        stamp_w_f / canvas_w,
+        stamp_h_f / canvas_h
+    ])
+
+    metadata = {
+        "form_name": form_name,
+        "form_width_mm": form["width_mm"],
+        "form_height_mm": form["height_mm"],
+        "dpi": dpi,
+        "paper_size": paper_size,
+        "corner": corner,
+        "stamp_bbox": [x, y, stamp_w_f, stamp_h_f],
+    }
+
+    return canvas, label, metadata
+
+
+def crop_stamp_from_image(image: np.ndarray, labels: np.ndarray, margin: float = 0.05) -> np.ndarray:
+    h, w = image.shape[:2]
+    for label in labels:
+        _, cx, cy, bw, bh = label
+        x = int((cx - bw / 2) * w)
+        y = int((cy - bh / 2) * h)
+        cw = int(bw * w)
+        ch = int(bh * h)
+        
+        mx = int(cw * margin)
+        my = int(ch * margin)
+        x1 = max(0, x - mx)
+        y1 = max(0, y - my)
+        x2 = min(w, x + cw + mx)
+        y2 = min(h, y + ch + my)
+        return image[y1:y2, x1:x2]
+    return np.array([])
+
+
+def generate_synthetic_from_real(
+    background_img: np.ndarray,
+    stamp_img: np.ndarray,
+    corner: str = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    corner = corner or random.choice(["bottom_right", "bottom_left", "top_right", "top_left"])
+    
+    bg_h, bg_w = background_img.shape[:2]
+    stamp_h, stamp_w = stamp_img.shape[:2]
+    
+    margin = 50
+    corners = {
+        "bottom_right": (max(0, bg_w - stamp_w - margin), max(0, bg_h - stamp_h - margin)),
+        "bottom_left": (margin, max(0, bg_h - stamp_h - margin)),
+        "top_right": (max(0, bg_w - stamp_w - margin), margin),
+        "top_left": (margin, margin),
+    }
+    x, y = corners[corner]
+    
+    stamp_h_f = min(stamp_h, bg_h - y)
+    stamp_w_f = min(stamp_w, bg_w - x)
+    
+    canvas = background_img.copy()
+    canvas[y:y+stamp_h_f, x:x+stamp_w_f] = stamp_img[:stamp_h_f, :stamp_w_f]
+    
+    label = np.array([
+        0,
+        (x + stamp_w_f / 2) / bg_w,
+        (y + stamp_h_f / 2) / bg_h,
+        stamp_w_f / bg_w,
+        stamp_h_f / bg_h
+    ])
+    
+    metadata = {
+        "corner": corner,
+        "stamp_bbox": [x, y, stamp_w_f, stamp_h_f],
+        "background_shape": background_img.shape,
+    }
+    
+    return canvas, label, metadata
+
+
+def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -> List[dict]:
+    output_dir = Path(output_dir)
+    img_dir = output_dir / "images" / "train"
+    lbl_dir = output_dir / "labels" / "train"
+    img_dir.mkdir(parents=True, exist_ok=True)
+    lbl_dir.mkdir(parents=True, exist_ok=True)
+
+    metadata_list = []
+    for i in range(num_samples):
+        img, label, meta = generate_synthetic_image(dpi=dpi)
+
+        img_path = img_dir / f"synth_{i:04d}.png"
+        cv2.imwrite(str(img_path), img)
+
+        lbl_path = lbl_dir / f"synth_{i:04d}.txt"
+        with open(lbl_path, "w") as f:
+            f.write(f"{int(label[0])} {label[1]:.6f} {label[2]:.6f} {label[3]:.6f} {label[4]:.6f}\n")
+
+        metadata_list.append({**meta, "image": img_path.name})
+
+    return metadata_list
+
+
+# ============ Copy-Paste Synthesis (Hybrid) ============
 
 def denormalize_bbox(bbox_norm: np.ndarray, img_width: int, img_height: int) -> np.ndarray:
+    """Converts normalized YOLO bbox to absolute pixel coords [class_id, x_min, y_min, x_max, y_max]."""
     class_id, center_x, center_y, width, height = bbox_norm
     x_min = int((center_x - width / 2) * img_width)
     y_min = int((center_y - height / 2) * img_height)
@@ -31,6 +274,7 @@ def denormalize_bbox(bbox_norm: np.ndarray, img_width: int, img_height: int) -> 
 
 
 def normalize_bbox(bbox_abs: np.ndarray, img_width: int, img_height: int) -> np.ndarray:
+    """Converts absolute pixel bbox to normalized YOLO format."""
     class_id, x_min, y_min, x_max, y_max = bbox_abs
     center_x = ((x_min + x_max) / 2) / img_width
     center_y = ((y_min + y_max) / 2) / img_height
@@ -39,119 +283,128 @@ def normalize_bbox(bbox_abs: np.ndarray, img_width: int, img_height: int) -> np.
     return np.array([class_id, center_x, center_y, width, height])
 
 
-def crop_stamp_regions(
-    image: np.ndarray,
-    labels: np.ndarray,
-    ppi: Optional[float] = None,
-    margin: float = 0.05
-) -> List[StampInfo]:
+def crop_stamp_regions(image: np.ndarray, labels: np.ndarray, margin: float = 0.0) -> List[np.ndarray]:
+    """Crops stamp regions with margin (default 0 for clean bbox)."""
     cropped_stamps = []
     h, w, _ = image.shape
 
-    if ppi is None:
-        for label in labels:
-            _, _, _, norm_w, norm_h = label
-            bbox_w_px = norm_w * w
-            bbox_h_px = norm_h * h
-            if bbox_w_px > 50 and bbox_h_px > 30:
-                est_ppi = (bbox_w_px / 50) * 25.4
-                ppi = est_ppi
-                break
-        if ppi is None:
-            ppi = 300
-
     for label in labels:
         _, x_min, y_min, x_max, y_max = denormalize_bbox(label, w, h).astype(int)
-        bbox_w = x_max - x_min
-        bbox_h = y_max - y_min
-        margin_x = int(bbox_w * margin)
-        margin_y = int(bbox_h * margin)
-        x_min = max(0, x_min - margin_x)
-        y_min = max(0, y_min - margin_y)
-        x_max = min(w, x_max + margin_x)
-        y_max = min(h, y_max + margin_y)
-        cropped = image[y_min:y_max, x_min:x_max]
-        if cropped.size > 0:
-            stamp_w, stamp_h = x_max - x_min, y_max - y_min
-            cropped_stamps.append(StampInfo(
-                image=cropped,
-                original_ppi=ppi,
-                original_size_px=(stamp_w, stamp_h),
-                original_size_mm=(stamp_w / ppi * 25.4, stamp_h / ppi * 25.4)
-            ))
+        
+        if margin > 0:
+            bbox_w = x_max - x_min
+            bbox_h = y_max - y_min
+            margin_x = int(bbox_w * margin)
+            margin_y = int(bbox_h * margin)
+            x_min = max(0, x_min - margin_x)
+            y_min = max(0, y_min - margin_y)
+            x_max = min(w, x_max + margin_x)
+            y_max = min(h, y_max + margin_y)
+        
+        cropped_stamp = image[y_min:y_max, x_min:x_max]
+        if cropped_stamp.size > 0:
+            cropped_stamps.append(cropped_stamp)
     return cropped_stamps
 
 
-def scale_stamp_to_ppi(stamp_info: StampInfo, target_ppi: float) -> np.ndarray:
-    stamp_w_mm, stamp_h_mm = stamp_info.original_size_mm
-    target_w = max(int(stamp_w_mm / 25.4 * target_ppi), 10)
-    target_h = max(int(stamp_h_mm / 25.4 * target_ppi), 10)
-    return cv2.resize(stamp_info.image, (target_w, target_h), interpolation=cv2.INTER_AREA)
+def crop_stamp_with_original_bbox(image: np.ndarray, labels: np.ndarray, margin: float = 0.05) -> List[Tuple[np.ndarray, Tuple[int, int, int, int]]]:
+    """
+    Crops stamp regions with margin, but returns both cropped stamp AND original bbox (without margin).
+    Returns: List of (cropped_stamp_with_margin, original_bbox_abs) where bbox is (x, y, w, h) WITHOUT margin.
+    """
+    results = []
+    h, w, _ = image.shape
+
+    for label in labels:
+        _, ox_min, oy_min, ox_max, oy_max = denormalize_bbox(label, w, h).astype(int)
+        
+        bbox_w = ox_max - ox_min
+        bbox_h = oy_max - oy_min
+        margin_x = int(bbox_w * margin)
+        margin_y = int(bbox_h * margin)
+        
+        x_min = max(0, ox_min - margin_x)
+        y_min = max(0, oy_min - margin_y)
+        x_max = min(w, ox_max + margin_x)
+        y_max = min(h, oy_max + margin_y)
+        
+        cropped_stamp = image[y_min:y_max, x_min:x_max]
+        if cropped_stamp.size > 0:
+            original_bbox = (ox_min, oy_min, ox_max - ox_min, oy_max - oy_min)
+            results.append((cropped_stamp, original_bbox))
+    return results
 
 
-def _estimate_ppi_from_size(width: int, height: int) -> float:
-    if width > 9000:
-        return 300
-    elif width > 6000:
-        return 200
-    elif width > 3000:
-        return 150
-    else:
-        return 100
-
-
-def paste_stamp_onto_background(
-    background_image: np.ndarray,
-    stamp_patch: np.ndarray,
-    target_position: Tuple[int, int]
-) -> Tuple[np.ndarray, Tuple[int, int, int, int]]:
+def paste_stamp_onto_background(background_image: np.ndarray, stamp_patch: np.ndarray, target_position: Tuple[int, int]) -> Tuple[np.ndarray, Tuple[int, int, int, int]]:
+    """Pastes stamp onto background, returns image and absolute bbox."""
     bg_h, bg_w, _ = background_image.shape
     s_h, s_w, _ = stamp_patch.shape
+
     x_offset, y_offset = target_position
     x_offset = max(0, min(x_offset, bg_w - s_w))
     y_offset = max(0, min(y_offset, bg_h - s_h))
+
     synthetic_image = background_image.copy()
     synthetic_image[y_offset:y_offset + s_h, x_offset:x_offset + s_w] = stamp_patch
+    
     pasted_bbox_abs = (0, x_offset, y_offset, x_offset + s_w, y_offset + s_h)
     return synthetic_image, pasted_bbox_abs
 
 
-def generate_synthetic_image(
+def generate_synthetic_from_real_stamps(
     original_images_info: List[Tuple[Path, np.ndarray, np.ndarray]],
-    stamps_pool: List[StampInfo],
+    stamps_pool: List[Tuple[np.ndarray, Tuple[int, int, int, int]]],
     num_stamps_per_image: int = 1
 ) -> Tuple[np.ndarray, np.ndarray]:
-    if not stamps_pool:
-        raise ValueError("Stamps pool cannot be empty.")
-    if not original_images_info:
-        raise ValueError("Original images info cannot be empty for backgrounds.")
+    """
+    Generates synthetic image by pasting real stamps onto backgrounds.
+    Preserves existing labels (hybrid: real + synthetic).
+    
+    Args:
+        original_images_info: List of (image_path, image_data, existing_labels)
+        stamps_pool: List of (stamp_patch_with_margin, original_bbox) tuples
+                     original_bbox is (x, y, w, h) WITHOUT margin - used for label
+        num_stamps_per_image: Number of synthetic stamps to add
+    
+    Returns:
+        Tuple of (synthetic_image, combined_labels)
+    """
+    if not stamps_pool or not original_images_info:
+        raise ValueError("Stamps pool and backgrounds cannot be empty.")
 
     _, background_image, existing_labels = random.choice(original_images_info)
     bg_h, bg_w, _ = background_image.shape
-    target_ppi = _estimate_ppi_from_size(bg_w, bg_h)
-
+    
     all_labels = list(existing_labels) if existing_labels.size > 0 else []
     synthetic_image = background_image.copy()
 
     for _ in range(num_stamps_per_image):
         if not stamps_pool:
             break
-        stamp_info = random.choice(stamps_pool)
-        transformed_stamp = apply_augmentations(stamp_info.image)
-        scaled_stamp = scale_stamp_to_ppi(StampInfo(
-            image=transformed_stamp,
-            original_ppi=stamp_info.original_ppi,
-            original_size_px=stamp_info.original_size_px,
-            original_size_mm=stamp_info.original_size_mm
-        ), target_ppi)
-        s_h, s_w, _ = scaled_stamp.shape
+
+        stamp_with_margin, original_bbox = random.choice(stamps_pool)
+        
+        from .augment import apply_augmentations
+        transformed_stamp = apply_augmentations(stamp_with_margin)
+        
+        s_h, s_w, _ = transformed_stamp.shape
+
         if bg_w - s_w <= 0 or bg_h - s_h <= 0:
             continue
+            
         x_offset = random.randint(0, bg_w - s_w)
         y_offset = random.randint(0, bg_h - s_h)
-        synthetic_image, pasted_bbox_abs = paste_stamp_onto_background(
-            synthetic_image, scaled_stamp, (x_offset, y_offset)
-        )
-        all_labels.append(normalize_bbox(np.array(pasted_bbox_abs), bg_w, bg_h))
 
+        # Paste transformed stamp
+        synthetic_image[y_offset:y_offset+s_h, x_offset:x_offset+s_w] = transformed_stamp
+        
+        # Use ORIGINAL bbox (without margin) for label - scaled to new position
+        ox, oy, ow, oh = original_bbox
+        # Scale original bbox to match transformed stamp size
+        scale_w = s_w / ow if ow > 0 else 1.0
+        scale_h = s_h / oh if oh > 0 else 1.0
+        new_bbox = (x_offset, y_offset, int(ow * scale_w), int(oh * scale_h))
+        
+        all_labels.append(normalize_bbox(np.array([0] + list(new_bbox)), bg_w, bg_h))
+        
     return synthetic_image, np.array(all_labels) if all_labels else np.empty((0, 5))
