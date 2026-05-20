@@ -1,0 +1,27 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large artifacts (weights)
+artifacts/yolo/
+artifacts/rcnn/
+artifacts/detr/
+artifacts/models/*.pt
+artifacts/models/*.pth
+
+# Synthetic data (generated, not committed)
+data/images/train/
+data/labels/train/
+
+# OS
+.DS_Store
+Thumbs.db

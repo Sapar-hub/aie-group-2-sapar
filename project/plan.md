@@ -55,24 +55,24 @@ Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
 - [x] `notebooks/exp03_cv_baseline.ipynb` — results, parameter sweeps, failure analysis
 
 ### Phase 3: YOLO Experiments
-- [ ] `src/models/yolo_model.py` — train/inference wrapper
-- [ ] `notebooks/exp04_yolo_experiments.ipynb` — 3 variants, 5-fold CV results
+- [x] `src/models/yolo_model.py` — train/inference wrapper
+- [x] `notebooks/exp04_yolo_experiments.ipynb` — single run, 5-fold CV results
 
 ### Phase 4: Faster R-CNN Experiments
-- [ ] `src/models/rcnn_model.py` — train/inference wrapper
-- [ ] `notebooks/exp05_faster_rcnn.ipynb` — 3 variants, 5-fold CV results
+- [x] `src/models/rcnn_model.py` — train/inference wrapper
+- [x] `notebooks/exp05_faster_rcnn.ipynb` — single run, results
 
 ### Phase 5: DETR Experiments (stretch)
 - [ ] `src/models/detr_model.py` — train/inference wrapper
 - [ ] `notebooks/exp06_detr.ipynb` — 3 variants, 5-fold CV results
 
 ### Phase 6: Hybrid
-- [ ] `src/hybrid/refiner.py` — CV post-processing of CNN proposals
-- [ ] `notebooks/exp07_hybrid.ipynb` — all hybrid variants
+- [x] `src/hybrid/refiner.py` — CV post-processing of CNN proposals
+- [x] `notebooks/exp06_hybrid.ipynb` — all hybrid variants
 
 ### Phase 7: Comparison
-- [ ] `notebooks/exp08_comparison.ipynb` — aggregate metrics, statistical tests, plots
-- [ ] `src/evaluation/metrics.py` — reusable metric computation
+- [x] `notebooks/exp07_comparison.ipynb` — aggregate metrics, statistical tests, plots
+- [x] `src/evaluation/metrics.py` — reusable metric computation
 
 ### Phase 8: API Service
 - [ ] `src/api/main.py` — FastAPI app
