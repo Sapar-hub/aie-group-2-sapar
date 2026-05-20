@@ -1,7 +1,7 @@
 # YOLO dataset config
 # Synthetic data for training
-train: data/images/train
-val: data/images/test
+train: images/train
+val: images/test
 
 nc: 1
 names: ['stamp']
