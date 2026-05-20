@@ -1,0 +1,12 @@
+{
+  "model": "YOLOv8n",
+  "data": "500 synthetic + 49 real (val)",
+  "epochs": 50,
+  "train_time_min": 74.3,
+  "iou_mean": 0.654,
+  "iou_std": 0.387,
+  "precision": 0.783,
+  "recall": 0.735,
+  "f1": 0.758,
+  "detection_rate": 0.939
+}
