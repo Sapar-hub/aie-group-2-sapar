@@ -25,4 +25,4 @@ data/labels/train/
 # OS
 .DS_Store
 Thumbs.db
-.cache
+*.cache
