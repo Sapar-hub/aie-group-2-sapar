@@ -54,7 +54,7 @@ def generate_copypaste_dataset(
 
     # Load real stamps
     real_stamps = []
-    for img_path in background_dir.glob("*.png"):
+    for img_path in sorted(background_dir.glob("*.png")) + sorted(background_dir.glob("*.jpg")):
         img, lbls = load_image_and_labels(img_path, label_dir)
         if lbls.size > 0:
             stamp = crop_stamp_from_image(img, lbls, margin=0.05)

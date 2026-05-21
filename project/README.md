@@ -37,38 +37,42 @@ project/
 │   ├── config.yaml               # Основной конфиг
 │   └── .env.example              # Шаблон секретов
 ├── data/
-│   ├── images/test/              # 49 тестовых изображений
-│   ├── synthetic/                # Синтетические данные
-│   └── labels/test/              # 49 YOLO-разметок
+│   ├── images/test/              # 49 реальных изображений
+│   ├── images/train/             # 500 синтетических (генерируются)
+│   ├── labels/test/              # 49 YOLO-разметок
+│   ├── labels/train/             # 500 синтетических разметок
+│   └── gost_stamp.yaml           # YOLO dataset config
 ├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_cv_baseline.ipynb
-│   ├── 03_yolo_experiments.ipynb
-│   ├── 04_faster_rcnn.ipynb
-│   ├── 05_detr.ipynb
-│   ├── 06_hybrid.ipynb
-│   └── 07_comparison.ipynb
+│   ├── exp01_eda_baseline.ipynb        # EDA: PPI, размеры штампов
+│   ├── exp02_synthetic_data.ipynb      # Синтетические данные
+│   ├── exp03_cv_baseline.ipynb         # CV baseline (contours)
+│   ├── exp04_yolo_experiments.ipynb    # YOLOv8 train/eval
+│   ├── exp05_faster_rcnn.ipynb         # Faster R-CNN train/eval
+│   ├── exp06_hybrid.ipynb              # CNN + CV refine
+│   └── exp07_comparison.ipynb          # Финальное сравнение
 ├── src/
 │   ├── data/
 │   │   ├── loader.py             # Загрузка изображений и разметок
 │   │   ├── augment.py            # Аугментации
-│   │   └── synthetic.py          # Генерация синтетики
+│   │   ├── synthetic.py          # Генерация синтетики
+│   │   └── ppi.py                # PPI detection (metadata + ISO 216)
 │   ├── models/
 │   │   ├── cv_baseline.py        # OpenCV пайплайн
 │   │   ├── yolo_model.py         # YOLO обёртка
 │   │   ├── rcnn_model.py         # Faster R-CNN обёртка
-│   │   └── detr_model.py         # DETR обёртка
+│   │   └── __init__.py
 │   ├── evaluation/
 │   │   └── metrics.py            # IoU, precision, recall, F1
 │   ├── hybrid/
-│   │   └── refiner.py            # CV-уточнение CNN-кандидатов
+│   │   ├── refiner.py            # CV-уточнение CNN-кандидатов
+│   │   └── __init__.py
 │   └── api/
-│       ├── main.py               # FastAPI приложение
+│       ├── main.py               # FastAPI приложение + /predict
 │       ├── schemas.py            # Pydantic схемы
-│       └── router.py             # /predict endpoint
+│       └── __init__.py
 ├── tests/
-│   ├── test_metrics.py
-│   └── test_models.py
+│   ├── test_metrics.py           # 10 тестов метрик
+│   └── test_models.py            # 5 тестов моделей
 ├── artifacts/
 │   ├── models/                   # Обученные веса
 │   ├── figures/                  # Графики
@@ -113,19 +117,21 @@ pip install -r requirements.txt
 python -m scripts.generate_synthetic
 ```
 
-### 4.2. Обучение всех моделей
+### 4.2. Обучение моделей (Google Colab)
 
-```bash
-python -m scripts.train_all
-```
+Все эксперименты запускаются в Google Colab (T4 GPU, Free). 
 
-### 4.3. Оценка всех моделей
+Последовательность:
+1. Открыть `notebooks/exp04_yolo_experiments.ipynb` в Colab
+2. Запустить все ячейки → YOLO обучение (~3-5 мин)
+3. Открыть `notebooks/exp05_faster_rcnn.ipynb` в Colab
+4. Запустить все ячейки → Faster R-CNN (~15-30 мин)
+5. `notebooks/exp06_hybrid.ipynb` → Hybrid (~2 мин)
+6. `notebooks/exp07_comparison.ipynb` → Финальное сравнение
 
-```bash
-python -m scripts.evaluate_all
-```
+Результаты автосохраняются в `artifacts/metrics/` и пушатся в git.
 
-### 4.4. Запуск сервиса
+### 4.3. Запуск сервиса (локально после обучения)
 
 ```bash
 python -m src.api.main
@@ -156,8 +162,10 @@ curl -X POST -F "file=@чертеж.png" http://localhost:8000/predict
 
 ```bash
 cd project
-pytest tests
+pytest tests -v
 ```
+
+Результат: 15 passed, 1 skipped (RCNN пропущен — требует torch/torchvision).
 
 ---
 
