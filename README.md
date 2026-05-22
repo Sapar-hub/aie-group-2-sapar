@@ -1,117 +1,117 @@
-# Репозиторий студента по курсу «Инженерия Искусственного Интеллекта»
+# Student Repository for the AI Engineering Course
 
-Этот репозиторий создан из шаблона и используется **одновременно** для:
+This repository is created from a template and is used **simultaneously** for:
 
-- выполнения домашних заданий по семинарам;
-- разработки и демонстрации итогового проекта.
+- completing homework assignments for seminars;
+- developing and presenting the final project.
 
-Пожалуйста, не меняйте базовую структуру каталогов (`homeworks/` и `project/`), чтобы преподавателю было проще проверять работы.
+Please do not change the base directory structure (`homeworks/` and `project/`) to make it easier for instructors to review the work.
 
 ---
 
-## Информация о студенте
+## Student Info
 
-Заполните этот блок **перед началом работы**:
+Fill in this block **before starting work**:
 
-- ФИО: `Сапармурадов Сапармурат`
-- Группа: `БФБО-01-24`
-- Контакт: `@benotlikethose5919`
+- Full Name: `Сапармурадов Сапармурат`
+- Group: `БФБО-01-24`
+- Contact: `@benotlikethose5919`
 - E-mail: `saparmurat.saparmuradov@mail.ru`
 
 ---
 
-## Структура репозитория
+## Repository Structure
 
-В репозитории предусмотрены две основные области:
+The repository has two main areas:
 
-- `homeworks/` – домашние задания по семинарам;
-- `project/` – итоговый мини-проект.
+- `homeworks/` — seminar homework assignments;
+- `project/` — final mini-project.
 
-Подробнее:
+Details:
 
 - `homeworks/`
-  - `README.md` – краткие правила оформления домашних заданий.
-  - `HW01/`, `HW02/`, `HW03/`, ... – отдельная папка под каждое задание.
-    Для каждого задания должен быть **один основной файл** с таким же номером, например:
+  - `README.md` — brief homework formatting guidelines.
+  - `HW01/`, `HW02/`, `HW03/`, ... — separate folder for each assignment.
+    Each assignment must have **one main file** with the same number, e.g.:
     - `homeworks/HW01/HW01.ipynb`
     - `homeworks/HW02/HW02.ipynb`
-    - и т.д.
+    - etc.
 
 - `project/`
-  - `README.md` – паспорт проекта и инструкции по запуску.
-  - `requirements.txt` – зависимости **только для проекта**.
-  - `notebooks/` – экспериментальные ноутбуки, EDA, прототипы.
-  - `src/` – основной код проекта (модули, пайплайны, сервисы).
-  - `data/` – демонстрационные/учебные данные (без персональных и конфиденциальных данных).
-  - `configs/` – конфигурационные файлы, шаблоны `.env.example` и т.п.
-  - `tests/` – тесты (если используются).
-  - `artifacts/` – сохранённые модели, отчёты, артефакты обучения.
+  - `README.md` — project passport and launch instructions.
+  - `requirements.txt` — dependencies **for the project only**.
+  - `notebooks/` — experimental notebooks, EDA, prototypes.
+  - `src/` — main project code (modules, pipelines, services).
+  - `data/` — demo/training data (no personal or confidential data).
+  - `configs/` — configuration files, `.env.example` templates, etc.
+  - `tests/` — tests (if used).
+  - `artifacts/` — saved models, reports, training artifacts.
 
 ---
 
-## Как работать с домашними заданиями
+## How to Work with Homework
 
-1. Для каждого нового задания создавайте папку:
+1. For each new assignment, create a folder:
    - `homeworks/HW01/`
    - `homeworks/HW02/`
    - `homeworks/HW03/`
-   - и т.д.
+   - etc.
 
-2. Основной файл задания должен называться:
-   - `HW01.ipynb` в папке `HW01/`;
-   - `HW02.ipynb` в папке `HW02/`;
-   - и т.п.
+2. The main file for the assignment must be named:
+   - `HW01.ipynb` inside `HW01/`;
+   - `HW02.ipynb` inside `HW02/`;
+   - etc.
 
-3. При необходимости вы можете добавлять дополнительные файлы в соответствующую папку (`.py`, дополнительные ноутбуки, вспомогательные данные), если это не противоречит требованиям задания.
+3. If needed, you may add extra files to the corresponding folder (`.py`, additional notebooks, auxiliary data), as long as it does not conflict with the assignment requirements.
 
-4. **Не переименовывайте** папку `homeworks/` и папки формата `HWNN/` (например, `HW01/`, `HW02/` и т.п.), чтобы не ломать автоматическую и визуальную проверку.
-
----
-
-## Как работать над проектом
-
-- Весь код и материалы проекта размещайте **только** в папке `project/`.
-- В файле `project/README.md` опишите:
-  - цель проекта;
-  - краткую идею;
-  - как запустить проект (команды, зависимости, параметры);
-  - как воспроизвести демонстрацию для защиты.
-- Отдельный отчёт по проекту ведите в файле `project/report.md`:
-  - постановка задачи и метрики;
-  - описание данных и экспериментов;
-  - сравнение моделей и выбор финальной модели.
-- Для самопроверки перед сдачей используйте чеклист в `project/self-checklist.md`.
-- Все зависимости проекта фиксируйте в `project/requirements.txt`.
+4. **Do not rename** the `homeworks/` folder or `HWNN/` folders (e.g., `HW01/`, `HW02/`, etc.) to avoid breaking automated and visual checks.
 
 ---
 
-## Оценка итогового проекта
+## How to Work on the Project
 
-Итоговая оценка за проект выставляется по пятибалльной шкале (2–5) и зависит от:
-
-- соблюдения минимальных требований к работоспособности сервиса и структуре проекта;
-- количества выполненных пунктов чеклиста в `project/self-checklist.md`;
-- качества отчёта `project/report.md` и общей аккуратности реализации.
-
-Ориентировочно:
-
-- если проект не выполняет минимальные требования (не запускается, отсутствует ключевой функционал, грубые нарушения, явный плагиат) – оценка **2**;
-- если минимум пройден, но по чеклисту выполнено **меньше 5** пунктов – оценка **3**;
-- если по чеклисту выполнено **не менее 5** пунктов – оценка **4**;
-- если по чеклисту выполнено **не менее 9** пунктов – оценка **5**.
-
-Окончательное решение по оценке остаётся за преподавателем и может учитывать дополнительные сильные стороны проекта и соблюдение дедлайнов.
+- Place all project code and materials **only** inside the `project/` folder.
+- In `project/README.md`, describe:
+  - the project goal;
+  - a brief idea;
+  - how to run the project (commands, dependencies, parameters);
+  - how to reproduce the demo for the defense.
+- Maintain a separate report in `project/report.md`:
+  - problem statement and metrics;
+  - data and experiment description;
+  - model comparison and final model selection.
+- Use the checklist in `project/self-checklist.md` for self-check before submission.
+- Pin all project dependencies in `project/requirements.txt`.
 
 ---
 
-## Безопасность и работа с данными
+## Final Project Grading
 
-- Не коммитьте в репозиторий пароли, токены, ключи, файлы с реальными персональными данными и закрытые датасеты.
-- Если в проекте нужны данные, используйте:
-  - открытые датасеты;
-  - синтетические данные;
-  - обезличенные/анонимизированные выборки.
+The final project is graded on a 5-point scale (2–5) based on:
 
-Подробные правила и ограничения описаны в файле [`SECURITY.md`](./SECURITY.md). Пожалуйста, ознакомьтесь с ним перед началом работы.
+- meeting the minimum requirements for service functionality and project structure;
+- the number of completed checklist items in `project/self-checklist.md`;
+- the quality of the report in `project/report.md` and overall implementation neatness.
+
+Approximate guidelines:
+
+- if the project does not meet minimum requirements (won't run, missing key functionality, gross violations, obvious plagiarism) — grade **2**;
+- if the minimum is met but **fewer than 5** checklist items are completed — grade **3**;
+- if **at least 5** checklist items are completed — grade **4**;
+- if **at least 9** checklist items are completed — grade **5**.
+
+The final decision rests with the instructor and may take into account additional project strengths and deadline adherence.
+
+---
+
+## Security and Data Handling
+
+- Do not commit passwords, tokens, keys, files with real personal data, or closed datasets to the repository.
+- If the project needs data, use:
+  - open datasets;
+  - synthetic data;
+  - anonymized samples.
+
+Detailed rules and restrictions are described in [`SECURITY.md`](./SECURITY.md). Please read it before starting work.
 
 ---
