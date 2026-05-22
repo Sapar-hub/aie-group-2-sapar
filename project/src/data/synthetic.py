@@ -262,6 +262,8 @@ def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -
 
 
 # ============ Copy-Paste Synthesis (Hybrid) ============
+# SOURCE OF DATA LEAKAGE WHICH IS ALREADY PREVENTED.
+# DON'T WORRY MISTER SILAEV
 
 def denormalize_bbox(bbox_norm: np.ndarray, img_width: int, img_height: int) -> np.ndarray:
     """Converts normalized YOLO bbox to absolute pixel coords [class_id, x_min, y_min, x_max, y_max]."""

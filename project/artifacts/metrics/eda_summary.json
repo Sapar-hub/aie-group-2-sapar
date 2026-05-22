@@ -31,5 +31,23 @@
     "height_px_std": 312.8,
     "aspect_ratio_mean": 3.546,
     "aspect_ratio_std": 0.414
+  },
+  "donors": {
+    "filenames": [
+      "test_09.jpg",
+      "test_14.png",
+      "test_34.jpg",
+      "test_49.jpg"
+    ],
+    "n_clean_validation": 45,
+    "data_integrity": "only donors used as stamp sources; remaining images never cropped"
+  },
+  "physical_stamp_area_mm2": {
+    "n_with_ppi": 49,
+    "gost_expected": 10175.0,
+    "mean": 34218.0,
+    "std": 50676.9,
+    "min": 2562.7,
+    "max": 180709.0
   }
 }

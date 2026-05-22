@@ -18,6 +18,7 @@ from data.synthetic import (
     generate_synthetic_from_real,
     crop_stamp_from_image,
 )
+from data.image_quality import select_donors
 
 
 def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200):
@@ -45,19 +46,15 @@ def generate_copypaste_dataset(
     num_samples: int,
     background_dir: Path,
     label_dir: Path,
-    exclude_file: Path = None,
+    exclude_fnames: set = None,
 ):
     """Generate copy-paste synthetic stamps from real backgrounds.
 
     Args:
-        exclude_file: Path to a text file listing image filenames to EXCLUDE
-                      from stamp cropping and background use. One filename per line.
+        exclude_fnames: Set of filenames to exclude from stamp cropping.
     """
-    # Load exclude list
-    exclude_fnames = set()
-    if exclude_file and exclude_file.exists():
-        with open(exclude_file) as f:
-            exclude_fnames = set(line.strip() for line in f if line.strip())
+    exclude_fnames = exclude_fnames or set()
+    if exclude_fnames:
         print(f"Excluding {len(exclude_fnames)} images from stamp sources: {sorted(exclude_fnames)}")
 
     img_dir = output_dir / "images" / "train"
@@ -118,13 +115,41 @@ def main():
                        help="Directory with labels for copy-paste")
     parser.add_argument("--exclude-sources", type=str, default=None,
                        help="File listing image filenames to EXCLUDE from stamp sources (one per line)")
+    parser.add_argument("--donor-count", type=int, default=4,
+                       help="Number of donor images for auto-selection (default: 4)")
+    parser.add_argument("--donor-random-state", type=int, default=42,
+                       help="Random state for donor selection (default: 42)")
 
     args = parser.parse_args()
 
     output_dir = Path(args.output)
     bg_dir = Path(args.backgrounds)
     lbl_dir = Path(args.labels)
-    exclude_path = Path(args.exclude_sources) if args.exclude_sources else None
+
+    # Determine donor-exclude set
+    exclude_fnames = set()
+    if args.exclude_sources:
+        excl_path = Path(args.exclude_sources)
+        if excl_path.exists():
+            with open(excl_path) as f:
+                exclude_fnames = set(line.strip() for line in f if line.strip())
+            print(f"Loaded {len(exclude_fnames)} exclusions from {excl_path}")
+        else:
+            print(f"Exclude file {excl_path} not found — skipping")
+    else:
+        print(f"\nAuto-selecting {args.donor_count} donors via PPI×noise×size stratification...")
+        exclude_fnames = set(select_donors(
+            bg_dir, lbl_dir,
+            n_donors=args.donor_count,
+            random_state=args.donor_random_state,
+        ))
+        # Persist donor list for reproducibility
+        output_dir.mkdir(parents=True, exist_ok=True)
+        donor_path = output_dir / "donors.txt"
+        with open(donor_path, "w") as f:
+            for name in sorted(exclude_fnames):
+                f.write(f"{name}\n")
+        print(f"Donor list written to {donor_path}")
 
     print(f"Output: {output_dir / 'images' / 'train'}")
 
@@ -134,7 +159,10 @@ def main():
 
     if args.num_copy > 0:
         print(f"\nGenerating {args.num_copy} copy-paste images...")
-        generate_copypaste_dataset(output_dir, args.num_copy, bg_dir, lbl_dir, exclude_file=exclude_path)
+        generate_copypaste_dataset(
+            output_dir, args.num_copy, bg_dir, lbl_dir,
+            exclude_fnames=exclude_fnames,
+        )
 
     total = args.num_gost + args.num_copy
     print(f"\nDone! Generated {total} synthetic images in {output_dir}")

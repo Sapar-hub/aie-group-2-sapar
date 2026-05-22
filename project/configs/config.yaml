@@ -37,6 +37,12 @@ hybrid:
   iou_threshold: 0.3
   ar_refine_tolerance: 0.15
 
+synthetic:
+  donor_count: 4
+  donor_random_state: 42
+  num_gost: 250
+  num_copypaste: 250
+
 evaluation:
   iou_thresholds:
     - 0.3

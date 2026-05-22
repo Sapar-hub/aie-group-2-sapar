@@ -1,148 +1,83 @@
-# Plan: Stamp Detection — Hybrid YOLO + CV
+# План: Детекция штампов ГОСТ — гибрид YOLO + CV
 
-## Goal
+## Цель
 
-Build and compare 4 approaches for GOST stamp detection on construction drawings, then combine the best CNN with CV refinement into a hybrid. Deploy as a FastAPI service.
+Построить и сравнить 4 подхода для детекции штампов ГОСТ на строительных чертежах, затем объединить лучший CNN с CV-уточнением в гибрид. Развернуть как FastAPI сервис.
 
 ---
 
-## Approaches
+## Подходы
 
-| # | Approach | Type | Training Data |
+| # | Подход | Тип | Обучающие данные |
 |---|---|---|---|
-| 1 | **CV Baseline** (contours, template matching, color thresholding) | Classical | None |
-| 2 | **YOLOv8/v11** | One-stage CNN | 49 real + synthetic |
-| 3 | **Faster R-CNN** | Two-stage CNN | 49 real + synthetic |
-| 4 | **DETR** | Transformer detector | 49 real + synthetic |
-| 5 | **Hybrid** (best CNN → CV refine) | Combined | Best config from above |
-
-## Experiments
-
-Each CNN approach has 3 variants:
-- **No augmentation** — train on 49 images only
-- **Augmentation only** — train on 49 images with augmentations
-- **Augmentation + synthetic** — train on 49 + 500+ synthetic images
-
-Plus hybrid variants for each best CNN config.
-
-Total: **~16 experiment configurations** × 5 folds = ~80 training runs.
+| 1 | **CV Baseline** (контуры, template matching, цветовая пороговая обработка) | Классический | Нет |
+| 2 | **YOLOv8n** | Одностадийный CNN | 49 реальных + 500 синтетических |
+| 3 | **Faster R-CNN** | Двухстадийный CNN | 49 реальных + 500 синтетических |
+| 4 | **DETR** | Трансформерный детектор | — (stretch goal, не реализован) |
+| 5 | **Hybrid** (YOLO + CV уточнение) | Комбинированный | Лучшая конфигурация CNN |
 
 ---
 
-## Protocol
+## Протокол
 
-- **Cross-validation:** 5-fold on the 49 labeled images
-- **Synthetic generation:** Crop stamp regions → paste onto non-stamp drawing regions with random transforms (rotation, scale, brightness)
-- **Augmentations:** Horizontal flip, rotation ±15°, scale jitter, brightness/contrast, cutout
-- **Primary metric:** IoU (Intersection over Union)
-- **Secondary metrics:** Precision, Recall, F1, inference time
-- **Statistical test:** Paired Wilcoxon across folds to justify model selection
+- **Разделение:** 500 synthetic train / 49 real val (single split, без 5-fold CV в финальной версии)
+- **Синтетическая генерация:** Crop stamp regions → paste на не-stamp участки с random transforms + рисование по ГОСТ
+- **Аугментации:** Horizontal flip, rotation ±15°, scale jitter, brightness/contrast
+- **Основная метрика:** IoU (Intersection over Union)
+- **Вторичные метрики:** Precision, Recall, F1, Detection rate, inference time
 
 ---
 
-## Implementation Order
+## Статус реализации
 
-### Phase 1: Data Pipeline
-- [x] `src/data/loader.py` — load images + YOLO labels, visualize
-- [x] `src/data/augment.py` — augmentation transforms
-- [x] `src/data/synthetic.py` — synthetic data generation pipeline (GOST + copy-paste)
-- [x] `scripts/generate_synthetic.py` — CLI to generate dataset
-- [x] `notebooks/exp01_eda_baseline.ipynb` — EDA: image stats, label distribution, PPI analysis
-- [x] `notebooks/exp02_synthetic_data.ipynb` — synthetic data exploration
+### Фаза 1: Пайплайн данных
+- [x] `src/data/loader.py` — загрузка изображений + YOLO-разметок
+- [x] `src/data/augment.py` — аугментации
+- [x] `src/data/synthetic.py` — генерация синтетики (GOST + copy-paste)
+- [x] `src/data/image_quality.py` — PPI detection + Laplacian variance + donor selection
+- [x] `scripts/generate_synthetic.py` — CLI, авто-выбор доноров
+- [x] `notebooks/exp01_eda_baseline.ipynb` — EDA
+- [x] `notebooks/exp02_synthetic_data.ipynb` — синтетические данные
 
-### Phase 2: CV Baseline
-- [x] `src/models/cv_baseline.py` — contour detection, template matching, color-based
-- [x] `notebooks/exp03_cv_baseline.ipynb` — results, parameter sweeps, failure analysis
+### Фаза 2: CV Baseline
+- [x] `src/models/cv_baseline.py` — contour detection, template matching
+- [x] `notebooks/exp03_cv_baseline.ipynb` — результаты, param sweep
 
-### Phase 3: YOLO Experiments
+### Фаза 3: YOLO
 - [x] `src/models/yolo_model.py` — train/inference wrapper
-- [x] `notebooks/exp04_yolo_experiments.ipynb` — single run, 5-fold CV results
+- [x] `notebooks/exp04_yolo_experiments.ipynb` — обучение, метрики
 
-### Phase 4: Faster R-CNN Experiments
+### Фаза 4: Faster R-CNN
 - [x] `src/models/rcnn_model.py` — train/inference wrapper
-- [x] `notebooks/exp05_faster_rcnn.ipynb` — single run, results
+- [x] `notebooks/exp05_faster_rcnn.ipynb` — обучение, результаты
 
-### Phase 5: DETR Experiments (stretch)
-- [ ] `src/models/detr_model.py` — train/inference wrapper
-- [ ] `notebooks/exp06_detr.ipynb` — 3 variants, 5-fold CV results
+### Фаза 5: DETR (stretch goal)
+- [ ] `src/models/detr_model.py` — не реализован
+- [ ] `notebooks/exp06_detr.ipynb` — не реализован
 
-### Phase 6: Hybrid
-- [x] `src/hybrid/refiner.py` — CV post-processing of CNN proposals
-- [x] `notebooks/exp06_hybrid.ipynb` — all hybrid variants
+### Фаза 6: Hybrid
+- [x] `src/hybrid/refiner.py` — CV пост-обработка CNN-кандидатов
+- [x] `notebooks/exp06_hybrid.ipynb` — код есть, выходные ячейки отсутствуют
 
-### Phase 7: Comparison
-- [x] `notebooks/exp07_comparison.ipynb` — aggregate metrics, statistical tests, plots
-- [x] `src/evaluation/metrics.py` — reusable metric computation
+### Фаза 7: Сравнение
+- [x] `src/evaluation/metrics.py` — метрики
+- [x] `notebooks/exp07_comparison.ipynb` — код есть, выходные ячейки отсутствуют
 
-### Phase 8: API Service
-- [ ] `src/api/main.py` — FastAPI app
-- [ ] `src/api/schemas.py` — Pydantic request/response
-- [ ] `src/api/router.py` — /predict endpoint
+### Фаза 8: API сервис
+- [x] `src/api/main.py` — FastAPI приложение (/health, /predict)
+- [x] `src/api/schemas.py` — Pydantic схемы
+- [ ] `src/api/router.py` — заглушка, требует доработки или удаления
 
-### Phase 9: Project Infrastructure
-- [x] `configs/config.yaml` — all paths, model params, experiment config
-- [x] `configs/.env.example` — template for secrets
-- [x] `requirements.txt` — pinned dependencies
-- [x] `pyproject.toml` — package metadata + CLI entry points
-- [ ] `tests/test_metrics.py` — IoU calculation tests
-- [ ] `tests/test_pipeline.py` — end-to-end sanity checks
+### Фаза 9: Инфраструктура проекта
+- [x] `configs/config.yaml` — все параметры
+- [x] `configs/.env.example` — шаблон секретов
+- [x] `requirements.txt` — зависимости (требуется исправление cv2 → opencv-python)
+- [x] `pyproject.toml` — метаданные + entry points
+- [x] `tests/test_metrics.py` — 10 тестов метрик
+- [ ] `tests/test_pipeline.py` — end-to-end проверки
 
-### Phase 10: Documentation
-- [ ] `report.md` — fill with results and analysis
-- [ ] `self-checklist.md` — complete self-check
-- [ ] `README.md` — updated with final commands
-
----
-
----
-
-## PPI (Pixels Per Inch) Detection
-
-### Terminology
-- **DPI** (Dots Per Inch) — scanner setting, used when printing
-- **PPI** (Pixels Per Inch) — digital image property
-- For scanned technical drawings: PPI = DPI (these terms are often used interchangeably, but PPI is more accurate for digital)
-
-### Detection Logic (priority order)
-
-1. **Metadata extraction** (via `PIL.Image.info['dpi']`)
-   - If present and reasonable → use it
-   - Scanner settings are usually correct for full-page scans
-
-2. **ISO 216 inference** (dimension-based)
-   - Match image dimensions to standard A-series paper sizes (A1, A2, A3, A4)
-   - Use aspect ratio √2 (≈1.414) to identify paper size
-   - Calculate: `Spacing (mm/pixel) = Physical Width (mm) / Pixel Width`
-
-   ```
-   A4: 210×297 mm
-   A3: 297×420 mm
-   A2: 420×594 mm
-   A1: 594×841 mm
-   ```
-
-3. **Contradiction handling**
-   - Metadata exists + dimensions suggest different PPI → check tolerance (±10%)
-   - If contradiction → trust inference (dimensions are more "honest" after resize/compression)
-   - Validate via stamp size: stamp in mm should be consistent across images
-
-### Validation in EDA
-
-`notebooks/01_data_exploration.ipynb` should include:
-
-1. **PPI Distribution** — how many images have metadata vs inference
-2. **Contradiction Analysis** — when do they conflict?
-3. **Accuracy Check** — does stamp size in mm stay consistent?
-4. **Edge Cases** — non-standard paper sizes, cropped images
-
----
-
-## Risks
-
-| Risk | Mitigation |
-|---|---|
-| DETR won't converge on 49 images | Make DETR a stretch goal; drop if results are worse than random |
-| Synthetic data looks unrealistic | Randomize background patches; use multiple non-stamp regions |
-| 80 training runs is time-consuming | YOLO is fast (minutes/run); R-CNN moderate; DETR slowest. Run overnight. |
-| IoU metric is noisy with small data | 5-fold CV gives 5 estimates per config; use Wilcoxon for claims |
-| PPI metadata contradictory | Use dimension-based inference as fallback, validate via stamp size consistency |
+### Фаза 10: Документация
+- [x] `README.md` — основной README (обновлён)
+- [x] `report.md` — отчёт (заполнен частично)
+- [x] `self-checklist.md` — самопроверка
+- [x] README в `data/`, `configs/`, `notebooks/`, `src/`, `artifacts/`, `tests/`
