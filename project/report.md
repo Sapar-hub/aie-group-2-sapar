@@ -81,9 +81,11 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 **Результат:** IoU mean = 0.88, Precision = 1.0, Recall = 1.0, F1 = 1.0, Detection rate = 100%
 
 ### 4.3. Faster R-CNN (двухстадийный CNN)
-- Модель: ResNet50 FPN backbone
+- Модель: ResNet50 FPN backbone (pretrained на COCO, `weights="DEFAULT"`)
 - Данные: те же 500 synthetic train / 49 real val (eval на 45 non-donor)
-- Параметры: 30 epochs, batch=4, lr=0.001, imgsz=640
+- Параметры: 30 epochs, batch=4 (effective 8 с gradient accumulation), Adam с дифференциальным LR (backbone 1e-4, head 1e-3), imgsz=800, gradient clipping max_norm=1.0
+- Early stopping с patience=5
+- **Исправления:** `src/models/rcnn_model.py` — починена распаковка DataLoader, добавлен метод evaluate(), предобученные веса вместо инициализации с нуля, Adam вместо SGD, resize в predict()
 
 **Результат:** (ожидает завершения ноутбука exp05)
 

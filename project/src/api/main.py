@@ -26,23 +26,38 @@ model_type = None
 
 def load_model():
     global model, model_type
-    model_path = Path("artifacts/models/best.pt")
-    if model_path.exists():
+
+    yolo_path = Path("artifacts/models/best.pt")
+    rcnn_path = Path("artifacts/models/rcnn_best.pth")
+
+    if yolo_path.exists():
         try:
             from ultralytics import YOLO
-            logger.info(f"Loading YOLO model from {model_path}")
-            model = YOLO(str(model_path))
+            logger.info(f"Loading YOLO model from {yolo_path}")
+            model = YOLO(str(yolo_path))
             model_type = "yolo"
             logger.info("YOLO model loaded successfully")
+            return
         except Exception as e:
             logger.error(f"Failed to load YOLO model: {e}")
-            model_type = "none"
-    else:
-        logger.warning("No trained model found at artifacts/models/best.pt, using CV baseline")
-        from models.cv_baseline import CVBaselineDetector
-        model = CVBaselineDetector()
-        model_type = "cv_baseline"
-        logger.info("CV baseline model loaded")
+
+    if rcnn_path.exists():
+        try:
+            from models.rcnn_model import RCNNModel
+            logger.info(f"Loading RCNN model from {rcnn_path}")
+            model = RCNNModel()
+            model.load(rcnn_path)
+            model_type = "rcnn"
+            logger.info("RCNN model loaded successfully")
+            return
+        except Exception as e:
+            logger.error(f"Failed to load RCNN model: {e}")
+
+    logger.warning("No trained model found, using CV baseline")
+    from models.cv_baseline import CVBaselineDetector
+    model = CVBaselineDetector()
+    model_type = "cv_baseline"
+    logger.info("CV baseline model loaded")
 
 
 @app.on_event("startup")
@@ -88,6 +103,16 @@ async def predict(file: UploadFile = File(...)):
                 logger.info(f"YOLO detection: bbox={bbox}, conf={conf:.3f}")
             else:
                 raise HTTPException(status_code=404, detail="No stamp detected")
+
+        elif model_type == "rcnn":
+            raw_bbox = model.detect(image, conf=0.3)
+            if raw_bbox is None:
+                raise HTTPException(status_code=404, detail="No stamp detected")
+            x, y, bw, bh = raw_bbox
+            bbox = BoundingBox(x=x, y=y, width=bw, height=bh)
+            conf = 0.8
+            logger.info(f"RCNN detection: bbox={bbox}")
+
         else:
             cv_detector = model
             raw_bbox = cv_detector.detect(image)

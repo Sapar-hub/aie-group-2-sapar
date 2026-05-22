@@ -196,46 +196,82 @@ def crop_stamp_from_image(image: np.ndarray, labels: np.ndarray, margin: float =
     return np.array([])
 
 
+def clean_background(image: np.ndarray, label: np.ndarray) -> np.ndarray:
+    """Fill stamp bbox with local noise to erase original stamp."""
+    h, w = image.shape[:2]
+    _, cx, cy, bw, bh = label
+    x1 = int((cx - bw / 2) * w)
+    y1 = int((cy - bh / 2) * h)
+    x2 = int((cx + bw / 2) * w)
+    y2 = int((cy + bh / 2) * h)
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = min(w, x2), min(h, y2)
+    if x2 <= x1 or y2 <= y1:
+        return image.copy()
+    roi = image[y1:y2, x1:x2]
+    mean = roi.mean(axis=(0, 1))
+    std = roi.std(axis=(0, 1))
+    noise = np.clip(np.random.normal(mean, std, roi.shape), 0, 255).astype(np.uint8)
+    cleaned = image.copy()
+    cleaned[y1:y2, x1:x2] = noise
+    return cleaned
+
+
+def resize_stamp_for_bg(
+    stamp: np.ndarray,
+    bg_w: int,
+    bg_h: int,
+    max_rel_width: float = 0.6,
+    max_rel_height: float = 0.25,
+    max_upscale: float = 3.0,
+) -> np.ndarray:
+    """Scale stamp to fit background proportionally.
+
+    Pasted stamp occupies up to `max_rel_width` of background width
+    and up to `max_rel_height` of background height. Never upscales
+    more than `max_upscale`× to avoid blurring.
+    """
+    s_h, s_w = stamp.shape[:2]
+    target_w = int(bg_w * max_rel_width)
+    target_h = int(target_w * (s_h / s_w))
+    max_h = int(bg_h * max_rel_height)
+    if target_h > max_h:
+        scale = max_h / target_h
+        target_w = int(target_w * scale)
+        target_h = max_h
+    scale = min(target_w / s_w, target_h / s_h, max_upscale)
+    scale = max(scale, 0.1)
+    new_w = max(1, int(s_w * scale))
+    new_h = max(1, int(s_h * scale))
+    if new_w == s_w and new_h == s_h:
+        return stamp
+    return cv2.resize(stamp, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
+def place_by_orientation(
+    bg_w: int, bg_h: int, stamp_w: int, stamp_h: int, margin: int = 10
+) -> tuple:
+    """Place stamp based on sheet orientation."""
+    if bg_w >= bg_h:  # landscape → bottom-right
+        x = max(0, bg_w - stamp_w - margin)
+    else:  # portrait → bottom-center
+        x = max(0, (bg_w - stamp_w) // 2)
+    y = max(0, bg_h - stamp_h - margin)
+    return x, y
+
+
 def generate_synthetic_from_real(
     background_img: np.ndarray,
     stamp_img: np.ndarray,
-    corner: str = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    corner = corner or random.choice(["bottom_right", "bottom_left", "top_right", "top_left"])
-    
-    bg_h, bg_w = background_img.shape[:2]
-    stamp_h, stamp_w = stamp_img.shape[:2]
-    
-    margin = 50
-    corners = {
-        "bottom_right": (max(0, bg_w - stamp_w - margin), max(0, bg_h - stamp_h - margin)),
-        "bottom_left": (margin, max(0, bg_h - stamp_h - margin)),
-        "top_right": (max(0, bg_w - stamp_w - margin), margin),
-        "top_left": (margin, margin),
-    }
-    x, y = corners[corner]
-    
-    stamp_h_f = min(stamp_h, bg_h - y)
-    stamp_w_f = min(stamp_w, bg_w - x)
-    
+    bh, bw = background_img.shape[:2]
+    stamp = resize_stamp_for_bg(stamp_img, bw, bh)
+    sh, sw = stamp.shape[:2]
+    x, y = place_by_orientation(bw, bh, sw, sh)
     canvas = background_img.copy()
-    canvas[y:y+stamp_h_f, x:x+stamp_w_f] = stamp_img[:stamp_h_f, :stamp_w_f]
-    
-    label = np.array([
-        0,
-        (x + stamp_w_f / 2) / bg_w,
-        (y + stamp_h_f / 2) / bg_h,
-        stamp_w_f / bg_w,
-        stamp_h_f / bg_h
-    ])
-    
-    metadata = {
-        "corner": corner,
-        "stamp_bbox": [x, y, stamp_w_f, stamp_h_f],
-        "background_shape": background_img.shape,
-    }
-    
-    return canvas, label, metadata
+    canvas[y:y+sh, x:x+sw] = stamp
+    label = np.array([0, (x + sw / 2) / bw, (y + sh / 2) / bh, sw / bw, sh / bh])
+    return canvas, label, {"stamp_bbox": [x, y, sw, sh], "background_shape": background_img.shape}
 
 
 def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -> List[dict]:
