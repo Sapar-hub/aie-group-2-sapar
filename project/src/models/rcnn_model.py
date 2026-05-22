@@ -46,8 +46,13 @@ class RCNNModel:
             for images, targets in val_loader:
                 images = [img.to(self.device) for img in images]
                 targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
-                loss_dict = self.model(images, targets)
-                val_loss += sum(loss for loss in loss_dict.values()).item()
+                output = self.model(images, targets)
+                if isinstance(output, dict):
+                    val_loss += sum(loss for loss in output.values()).item()
+                elif isinstance(output, list):
+                    for d in output:
+                        if isinstance(d, dict):
+                            val_loss += sum(loss for loss in d.values()).item()
         return val_loss / len(val_loader) if len(val_loader) > 0 else 0.0
 
     def train(
