@@ -57,23 +57,38 @@ def get_metadata_ppi(img: Image.Image) -> Tuple[Optional[float], Optional[str]]:
 
 
 def estimate_paper_size_by_ratio(width_px: int, height_px: int, tolerance: float = 0.1) -> Optional[str]:
-    width_mm, height_mm = width_px, height_px
-    aspect_ratio_val = max(width_px, height_px) / min(width_px, height_px)
-    target_ratio = ASPECT_RATIO
-
-    if abs(aspect_ratio_val - target_ratio) / target_ratio > tolerance:
+    if width_px < 100 or height_px < 100:
         return None
 
-    for paper_name, (w_mm, h_mm) in ISO_PAPER_SIZES.items():
-        if width_mm / w_mm > 0.9 and width_mm / w_mm < 1.1:
-            if height_mm / h_mm > 0.9 and height_mm / h_mm < 1.1:
-                return paper_name
+    aspect_ratio_val = max(width_px, height_px) / min(width_px, height_px)
+    if abs(aspect_ratio_val - ASPECT_RATIO) / ASPECT_RATIO > tolerance * 2:
+        return None
 
-        if width_mm / h_mm > 0.9 and width_mm / h_mm < 1.1:
-            if height_mm / w_mm > 0.9 and height_mm / w_mm < 1.1:
-                return paper_name
+    short_side_px = min(width_px, height_px)
 
-    return None
+    best_match = None
+    best_score = float("inf")
+
+    # Order by paper area ascending (A5, A4, A3, A2, A1, A0) — smaller = more common
+    sorted_papers = sorted(ISO_PAPER_SIZES.items(), key=lambda x: x[1][0] * x[1][1])
+
+    for paper_name, (w_mm, h_mm) in sorted_papers:
+        paper_short_mm = min(w_mm, h_mm)
+        implied_dpi = short_side_px / (paper_short_mm / 25.4)
+
+        if not (50 < implied_dpi < 1200):
+            continue
+
+        dpi_deviation = min(abs(implied_dpi - d) for d in [72, 96, 150, 200, 300, 400, 600])
+        # Score: DPI deviation + small area-based tiebreaker (prefer smaller paper)
+        area_factor = (w_mm * h_mm) / (210 * 297)  # normalized to A4 area
+        score = dpi_deviation + area_factor * 0.5
+
+        if score < best_score:
+            best_score = score
+            best_match = paper_name
+
+    return best_match
 
 
 def infer_ppi_from_dimensions(width_px: int, height_px: int, tolerance: float = 0.1) -> Tuple[Optional[float], Optional[str]]:
@@ -86,8 +101,13 @@ def infer_ppi_from_dimensions(width_px: int, height_px: int, tolerance: float = 
 
     w_mm, h_mm = ISO_PAPER_SIZES[paper_size]
 
-    ppi_w = width_px / (w_mm / 25.4)
-    ppi_h = height_px / (h_mm / 25.4)
+    if width_px >= height_px:
+        ref_w_mm, ref_h_mm = h_mm, w_mm
+    else:
+        ref_w_mm, ref_h_mm = w_mm, h_mm
+
+    ppi_w = width_px / (ref_w_mm / 25.4)
+    ppi_h = height_px / (ref_h_mm / 25.4)
 
     if abs(ppi_w - ppi_h) / max(ppi_w, ppi_h) < 0.1:
         ppi = (ppi_w + ppi_h) / 2
@@ -188,8 +208,8 @@ def yolo_to_abs_bbox(label: np.ndarray, img_w: int, img_h: int) -> Tuple[int, in
     return (x, y, w, h)
 
 
-def _quantize_equal_freq(values: List[float], n_bins: int = 2) -> List[int]:
-    """Equal-frequency binning. Handles None by placing in bin 0."""
+def _quantize_equal_width(values: List[float], n_bins: int = 2) -> List[int]:
+    """Equal-width binning. Handles None by placing in bin 0."""
     bins = [0] * len(values)
 
     present = [(i, v) for i, v in enumerate(values) if v is not None]
@@ -332,9 +352,9 @@ def select_donors(
     lap_vals = [f.laplacian for f in features]
     roi_vals = [f.roi_rel_area for f in features]
 
-    ppi_bins = _quantize_equal_freq(ppi_vals, n_bins=2)
-    lap_bins = _quantize_equal_freq(lap_vals, n_bins=2)
-    roi_bins = _quantize_equal_freq(roi_vals, n_bins=2)
+    ppi_bins = _quantize_equal_width(ppi_vals, n_bins=2)
+    lap_bins = _quantize_equal_width(lap_vals, n_bins=2)
+    roi_bins = _quantize_equal_width(roi_vals, n_bins=2)
 
     for f, bp, bl, br in zip(features, ppi_bins, lap_bins, roi_bins):
         f.bin_ppi = bp

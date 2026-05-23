@@ -49,7 +49,7 @@ def create_stamp_grid(form_name: str, dpi: int) -> np.ndarray:
     h = mm_to_pixels(form["height_mm"], dpi)
     img = np.ones((h, w, 3), dtype=np.uint8) * 255
 
-    rows, cols = (8, 9) if "FORM_4" in form_name else (5, 15 if "FORM_5" in form_name else 9)
+    rows, cols = 5, 9
     cell_w = w // cols
     cell_h = h // rows
     thickness = max(1, dpi // 100)
@@ -141,7 +141,7 @@ def generate_synthetic_image(
     stamp = create_stamp_grid(form_name, dpi)
     stamp_h, stamp_w = stamp.shape[:2]
 
-    margin = 50
+    margin = max(20, dpi // 4)
     corners = {
         "bottom_right": (max(0, canvas_w - stamp_w - margin), max(0, canvas_h - stamp_h - margin)),
         "bottom_left": (margin, max(0, canvas_h - stamp_h - margin)),
@@ -245,7 +245,8 @@ def resize_stamp_for_bg(
     new_h = max(1, int(s_h * scale))
     if new_w == s_w and new_h == s_h:
         return stamp
-    return cv2.resize(stamp, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    interp = cv2.INTER_CUBIC if scale > 1.0 else cv2.INTER_AREA
+    return cv2.resize(stamp, (new_w, new_h), interpolation=interp)
 
 
 def place_by_orientation(
@@ -297,152 +298,4 @@ def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -
     return metadata_list
 
 
-# ============ Copy-Paste Synthesis (Hybrid) ============
-# SOURCE OF DATA LEAKAGE WHICH IS ALREADY PREVENTED.
-# DON'T WORRY MISTER SILAEV
 
-def denormalize_bbox(bbox_norm: np.ndarray, img_width: int, img_height: int) -> np.ndarray:
-    """Converts normalized YOLO bbox to absolute pixel coords [class_id, x_min, y_min, x_max, y_max]."""
-    class_id, center_x, center_y, width, height = bbox_norm
-    x_min = int((center_x - width / 2) * img_width)
-    y_min = int((center_y - height / 2) * img_height)
-    x_max = int((center_x + width / 2) * img_width)
-    y_max = int((center_y + height / 2) * img_height)
-    return np.array([class_id, x_min, y_min, x_max, y_max])
-
-
-def normalize_bbox(bbox_abs: np.ndarray, img_width: int, img_height: int) -> np.ndarray:
-    """Converts absolute pixel bbox to normalized YOLO format."""
-    class_id, x_min, y_min, x_max, y_max = bbox_abs
-    center_x = ((x_min + x_max) / 2) / img_width
-    center_y = ((y_min + y_max) / 2) / img_height
-    width = (x_max - x_min) / img_width
-    height = (y_max - y_min) / img_height
-    return np.array([class_id, center_x, center_y, width, height])
-
-
-def crop_stamp_regions(image: np.ndarray, labels: np.ndarray, margin: float = 0.0) -> List[np.ndarray]:
-    """Crops stamp regions with margin (default 0 for clean bbox)."""
-    cropped_stamps = []
-    h, w, _ = image.shape
-
-    for label in labels:
-        _, x_min, y_min, x_max, y_max = denormalize_bbox(label, w, h).astype(int)
-        
-        if margin > 0:
-            bbox_w = x_max - x_min
-            bbox_h = y_max - y_min
-            margin_x = int(bbox_w * margin)
-            margin_y = int(bbox_h * margin)
-            x_min = max(0, x_min - margin_x)
-            y_min = max(0, y_min - margin_y)
-            x_max = min(w, x_max + margin_x)
-            y_max = min(h, y_max + margin_y)
-        
-        cropped_stamp = image[y_min:y_max, x_min:x_max]
-        if cropped_stamp.size > 0:
-            cropped_stamps.append(cropped_stamp)
-    return cropped_stamps
-
-
-def crop_stamp_with_original_bbox(image: np.ndarray, labels: np.ndarray, margin: float = 0.05) -> List[Tuple[np.ndarray, Tuple[int, int, int, int]]]:
-    """
-    Crops stamp regions with margin, but returns both cropped stamp AND original bbox (without margin).
-    Returns: List of (cropped_stamp_with_margin, original_bbox_abs) where bbox is (x, y, w, h) WITHOUT margin.
-    """
-    results = []
-    h, w, _ = image.shape
-
-    for label in labels:
-        _, ox_min, oy_min, ox_max, oy_max = denormalize_bbox(label, w, h).astype(int)
-        
-        bbox_w = ox_max - ox_min
-        bbox_h = oy_max - oy_min
-        margin_x = int(bbox_w * margin)
-        margin_y = int(bbox_h * margin)
-        
-        x_min = max(0, ox_min - margin_x)
-        y_min = max(0, oy_min - margin_y)
-        x_max = min(w, ox_max + margin_x)
-        y_max = min(h, oy_max + margin_y)
-        
-        cropped_stamp = image[y_min:y_max, x_min:x_max]
-        if cropped_stamp.size > 0:
-            original_bbox = (ox_min, oy_min, ox_max - ox_min, oy_max - oy_min)
-            results.append((cropped_stamp, original_bbox))
-    return results
-
-
-def paste_stamp_onto_background(background_image: np.ndarray, stamp_patch: np.ndarray, target_position: Tuple[int, int]) -> Tuple[np.ndarray, Tuple[int, int, int, int]]:
-    """Pastes stamp onto background, returns image and absolute bbox."""
-    bg_h, bg_w, _ = background_image.shape
-    s_h, s_w, _ = stamp_patch.shape
-
-    x_offset, y_offset = target_position
-    x_offset = max(0, min(x_offset, bg_w - s_w))
-    y_offset = max(0, min(y_offset, bg_h - s_h))
-
-    synthetic_image = background_image.copy()
-    synthetic_image[y_offset:y_offset + s_h, x_offset:x_offset + s_w] = stamp_patch
-    
-    pasted_bbox_abs = (0, x_offset, y_offset, x_offset + s_w, y_offset + s_h)
-    return synthetic_image, pasted_bbox_abs
-
-
-def generate_synthetic_from_real_stamps(
-    original_images_info: List[Tuple[Path, np.ndarray, np.ndarray]],
-    stamps_pool: List[Tuple[np.ndarray, Tuple[int, int, int, int]]],
-    num_stamps_per_image: int = 1
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Generates synthetic image by pasting real stamps onto backgrounds.
-    Preserves existing labels (hybrid: real + synthetic).
-    
-    Args:
-        original_images_info: List of (image_path, image_data, existing_labels)
-        stamps_pool: List of (stamp_patch_with_margin, original_bbox) tuples
-                     original_bbox is (x, y, w, h) WITHOUT margin - used for label
-        num_stamps_per_image: Number of synthetic stamps to add
-    
-    Returns:
-        Tuple of (synthetic_image, combined_labels)
-    """
-    if not stamps_pool or not original_images_info:
-        raise ValueError("Stamps pool and backgrounds cannot be empty.")
-
-    _, background_image, existing_labels = random.choice(original_images_info)
-    bg_h, bg_w, _ = background_image.shape
-    
-    all_labels = list(existing_labels) if existing_labels.size > 0 else []
-    synthetic_image = background_image.copy()
-
-    for _ in range(num_stamps_per_image):
-        if not stamps_pool:
-            break
-
-        stamp_with_margin, original_bbox = random.choice(stamps_pool)
-        
-        from .augment import apply_augmentations
-        transformed_stamp = apply_augmentations(stamp_with_margin)
-        
-        s_h, s_w, _ = transformed_stamp.shape
-
-        if bg_w - s_w <= 0 or bg_h - s_h <= 0:
-            continue
-            
-        x_offset = random.randint(0, bg_w - s_w)
-        y_offset = random.randint(0, bg_h - s_h)
-
-        # Paste transformed stamp
-        synthetic_image[y_offset:y_offset+s_h, x_offset:x_offset+s_w] = transformed_stamp
-        
-        # Use ORIGINAL bbox (without margin) for label - scaled to new position
-        ox, oy, ow, oh = original_bbox
-        # Scale original bbox to match transformed stamp size
-        scale_w = s_w / ow if ow > 0 else 1.0
-        scale_h = s_h / oh if oh > 0 else 1.0
-        new_bbox = (x_offset, y_offset, x_offset + int(ow * scale_w), y_offset + int(oh * scale_h))
-        
-        all_labels.append(normalize_bbox(np.array([0] + list(new_bbox)), bg_w, bg_h))
-        
-    return synthetic_image, np.array(all_labels) if all_labels else np.empty((0, 5))

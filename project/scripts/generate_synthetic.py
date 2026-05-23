@@ -23,7 +23,7 @@ from data.synthetic import (
 from data.image_quality import select_donors
 
 
-def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200, train_subdir: str = "train"):
+def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200, train_subdir: str = "train_v2"):
     """Generate GOST-style synthetic stamps."""
     img_dir = output_dir / "images" / train_subdir
     lbl_dir = output_dir / "labels" / train_subdir
@@ -49,8 +49,7 @@ def generate_copypaste_dataset(
     image_dir: Path,
     label_dir: Path,
     donor_fnames: set = None,
-    dpi: int = 200,
-    train_subdir: str = "train",
+    train_subdir: str = "train_v2",
 ):
     """Generate copy-paste synthetic stamps.
 
@@ -137,15 +136,15 @@ def main():
                        help="Directory with background images for copy-paste")
     parser.add_argument("--labels", type=str, default="data/labels/test",
                        help="Directory with labels for copy-paste")
-    parser.add_argument("--exclude-sources", type=str, default=None,
-                       help="File listing donor image filenames to USE as stamp sources (one per line). "
+    parser.add_argument("--donor-sources", type=str, default=None,
+                       help="File listing donor image filenames to use as stamp sources (one per line). "
                             "If not set, donors are auto-selected via PPI×noise×size stratification.")
     parser.add_argument("--donor-count", type=int, default=4,
                        help="Number of donor images for auto-selection (default: 4)")
     parser.add_argument("--donor-random-state", type=int, default=42,
                        help="Random state for donor selection (default: 42)")
-    parser.add_argument("--train-dir", type=str, default="train",
-                       help="Subdirectory name under images/ and labels/ (default: train)")
+    parser.add_argument("--train-dir", type=str, default="train_v2",
+                       help="Subdirectory name under images/ and labels/ (default: train_v2)")
 
     args = parser.parse_args()
 
@@ -155,8 +154,8 @@ def main():
 
     # Determine donor set (images to use as stamp sources)
     donor_fnames = set()
-    if args.exclude_sources:
-        donor_path = Path(args.exclude_sources)
+    if args.donor_sources:
+        donor_path = Path(args.donor_sources)
         if donor_path.exists():
             with open(donor_path) as f:
                 donor_fnames = set(line.strip() for line in f if line.strip())
@@ -188,7 +187,7 @@ def main():
         print(f"\nGenerating {args.num_copy} copy-paste images...")
         generate_copypaste_dataset(
             output_dir, args.num_copy, bg_dir, lbl_dir,
-            donor_fnames=donor_fnames, dpi=args.dpi, train_subdir=args.train_dir,
+            donor_fnames=donor_fnames, train_subdir=args.train_dir,
         )
 
     total = args.num_gost + args.num_copy

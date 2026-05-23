@@ -9,5 +9,10 @@
     "year": 2026,
     "version": "1.0",
     "contributor": "Label Studio"
+  },
+  "info": {
+    "year" : 2026,
+    "version": "2.0",
+    "contributor": "Label Studio",
   }
 }

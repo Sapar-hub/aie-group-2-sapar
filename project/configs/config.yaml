@@ -6,7 +6,6 @@ paths:
   images_train: data/images/train
   labels_train: data/labels/train
   artifacts: artifacts
-  synthetic_output: data/synthetic
 
 model:
   classes:

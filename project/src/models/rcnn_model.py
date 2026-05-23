@@ -22,9 +22,9 @@ class RCNNModel:
         self.device = torch.device(device)
         self.model = None
 
-    def build(self):
+    def build(self, weights="DEFAULT"):
         logger.info("Building Faster R-CNN model...")
-        self.model = fasterrcnn_resnet50_fpn(weights="DEFAULT")
+        self.model = fasterrcnn_resnet50_fpn(weights=weights)
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         self.model.roi_heads.box_predictor = FastRCNNPredictor(
             in_features, self.num_classes
@@ -40,19 +40,20 @@ class RCNNModel:
         self.model.eval()
 
     def evaluate(self, val_loader) -> float:
-        self.model.eval()
+        self.model.train()
         val_loss = 0.0
         with torch.no_grad():
             for images, targets in val_loader:
                 images = [img.to(self.device) for img in images]
                 targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
                 output = self.model(images, targets)
+
                 if isinstance(output, dict):
-                    val_loss += sum(loss for loss in output.values()).item()
+                    val_loss += sum(v.item() for v in output.values())
                 elif isinstance(output, list):
                     for d in output:
                         if isinstance(d, dict):
-                            val_loss += sum(loss for loss in d.values()).item()
+                            val_loss += sum(v.item() for v in d.values())
         return val_loss / len(val_loader) if len(val_loader) > 0 else 0.0
 
     def train(
