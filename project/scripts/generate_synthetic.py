@@ -23,24 +23,35 @@ from data.synthetic import (
 from data.image_quality import select_donors
 
 
-def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200, train_subdir: str = "train_v2"):
+def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200, train_subdir: str = "train_v2", val_split: float = 0.0):
     """Generate GOST-style synthetic stamps."""
-    img_dir = output_dir / "images" / train_subdir
-    lbl_dir = output_dir / "labels" / train_subdir
-    img_dir.mkdir(parents=True, exist_ok=True)
-    lbl_dir.mkdir(parents=True, exist_ok=True)
+    rng = random.Random(42)
 
+    def _write_sample(img_array, label_array, subdir, idx):
+        img_d = output_dir / "images" / subdir
+        lbl_d = output_dir / "labels" / subdir
+        img_d.mkdir(parents=True, exist_ok=True)
+        lbl_d.mkdir(parents=True, exist_ok=True)
+
+        img_path = img_d / f"gost_{idx:04d}.png"
+        cv2.imwrite(str(img_path), img_array)
+
+        lbl_path = lbl_d / f"gost_{idx:04d}.txt"
+        with open(lbl_path, "w") as f:
+            f.write(f"{int(label_array[0])} {label_array[1]:.6f} {label_array[2]:.6f} {label_array[3]:.6f} {label_array[4]:.6f}\n")
+
+    train_idx, val_idx = 0, 0
     for i in range(num_samples):
         if i % 50 == 0:
             print(f"GOST: {i}/{num_samples}")
         img, label, _ = generate_synthetic_image(dpi=dpi)
 
-        img_path = img_dir / f"gost_{i:04d}.png"
-        cv2.imwrite(str(img_path), img)
-
-        lbl_path = lbl_dir / f"gost_{i:04d}.txt"
-        with open(lbl_path, "w") as f:
-            f.write(f"{int(label[0])} {label[1]:.6f} {label[2]:.6f} {label[3]:.6f} {label[4]:.6f}\n")
+        if val_split > 0 and rng.random() < val_split:
+            _write_sample(img, label, "val", val_idx)
+            val_idx += 1
+        else:
+            _write_sample(img, label, train_subdir, train_idx)
+            train_idx += 1
 
 
 def generate_copypaste_dataset(
@@ -50,50 +61,73 @@ def generate_copypaste_dataset(
     label_dir: Path,
     donor_fnames: set = None,
     train_subdir: str = "train_v2",
+    val_split: float = 0.0,
 ):
     """Generate copy-paste synthetic stamps.
 
     - Donor images: stamp region cropped, used as stamp patch
     - Non-donor images: original stamp erased with noise, used as clean background
+    - Images without labels are used as pre-cleaned backgrounds directly
     - Pasted stamp resized proportionally to background
     - Placement based on sheet orientation
 
     Args:
         donor_fnames: Set of filenames to use as stamp sources.
+        val_split: Fraction of samples to place in images/val (default 0.0).
     """
     donor_fnames = donor_fnames or set()
     if donor_fnames:
         print(f"Using {len(donor_fnames)} donors as stamp sources: {sorted(donor_fnames)}")
 
-    img_dir = output_dir / "images" / train_subdir
-    lbl_dir = output_dir / "labels" / train_subdir
-    img_dir.mkdir(parents=True, exist_ok=True)
-    lbl_dir.mkdir(parents=True, exist_ok=True)
-
-    # Collect stamps from donors, clean backgrounds from non-donors
+    # Collect stamps from donors, clean backgrounds from non-donors/unlabeled
     donor_stamps = []
     clean_backgrounds = []
 
     for img_path in sorted(image_dir.glob("*.png")) + sorted(image_dir.glob("*.jpg")):
-        img, labels = load_image_and_labels(img_path, label_dir)
-        if labels.size == 0:
+        try:
+            img, labels = load_image_and_labels(img_path, label_dir)
+        except FileNotFoundError:
+            labels = np.empty((0, 5))
+            img = cv2.imread(str(img_path))
+
+        if img is None:
             continue
 
         fname = img_path.name
         if donor_fnames and fname in donor_fnames:
-            stamp = crop_stamp_from_image(img, labels, margin=0.05)
-            if stamp.size > 0:
+            stamp = crop_stamp_from_image(img, labels, margin=0.05) if labels.size > 0 else None
+            if stamp is not None and stamp.size > 0:
                 donor_stamps.append(stamp)
         else:
-            cleaned = clean_background(img, labels[0])
-            clean_backgrounds.append(cleaned)
+            if labels.size > 0:
+                cleaned = clean_background(img, labels[0])
+            else:
+                cleaned = img
+            if cleaned is not None:
+                clean_backgrounds.append(cleaned)
 
     if not donor_stamps:
         print("No stamps found in donor images")
         return
 
     print(f"Loaded {len(donor_stamps)} stamps from {len(donor_fnames)} donors")
-    print(f"Loaded {len(clean_backgrounds)} clean backgrounds")
+    print(f"Loaded {len(clean_backgrounds)} clean backgrounds ({sum(1 for p in image_dir.glob('*.png')) + sum(1 for p in image_dir.glob('*.jpg')) - len(donor_fnames)} total non-donor images)")
+
+    rng = random.Random(42)
+    train_idx, val_idx = 0, 0
+
+    def _write_sample(synth_img, label_array, subdir, idx):
+        img_d = output_dir / "images" / subdir
+        lbl_d = output_dir / "labels" / subdir
+        img_d.mkdir(parents=True, exist_ok=True)
+        lbl_d.mkdir(parents=True, exist_ok=True)
+
+        img_out = img_d / f"copy_{idx:04d}.png"
+        cv2.imwrite(str(img_out), synth_img)
+
+        lbl_out = lbl_d / f"copy_{idx:04d}.txt"
+        with open(lbl_out, "w") as f:
+            f.write(f"0 {label_array[1]:.6f} {label_array[2]:.6f} {label_array[3]:.6f} {label_array[4]:.6f}\n")
 
     # Generate copy-paste samples
     for i in range(num_samples):
@@ -114,12 +148,12 @@ def generate_copypaste_dataset(
 
         label = np.array([0, (x + sw / 2) / bw, (y + sh / 2) / bh, sw / bw, sh / bh])
 
-        img_out = img_dir / f"copy_{i:04d}.png"
-        cv2.imwrite(str(img_out), synth)
-
-        lbl_out = lbl_dir / f"copy_{i:04d}.txt"
-        with open(lbl_out, "w") as f:
-            f.write(f"0 {label[1]:.6f} {label[2]:.6f} {label[3]:.6f} {label[4]:.6f}\n")
+        if val_split > 0 and rng.random() < val_split:
+            _write_sample(synth, label, "val", val_idx)
+            val_idx += 1
+        else:
+            _write_sample(synth, label, train_subdir, train_idx)
+            train_idx += 1
 
 
 def main():
@@ -132,10 +166,10 @@ def main():
                        help="Number of copy-paste images (default: 250)")
     parser.add_argument("--dpi", type=int, default=200,
                        help="DPI for GOST generation (default: 200)")
-    parser.add_argument("--backgrounds", type=str, default="data/images/test",
-                       help="Directory with background images for copy-paste")
+    parser.add_argument("--backgrounds", type=str, default="data/unlabeled",
+                       help="Directory with background images for copy-paste (default: data/unlabeled)")
     parser.add_argument("--labels", type=str, default="data/labels/test",
-                       help="Directory with labels for copy-paste")
+                       help="Directory with labels for copy-paste (default: data/labels/test)")
     parser.add_argument("--donor-sources", type=str, default=None,
                        help="File listing donor image filenames to use as stamp sources (one per line). "
                             "If not set, donors are auto-selected via PPI×noise×size stratification.")
@@ -145,6 +179,8 @@ def main():
                        help="Random state for donor selection (default: 42)")
     parser.add_argument("--train-dir", type=str, default="train_v2",
                        help="Subdirectory name under images/ and labels/ (default: train_v2)")
+    parser.add_argument("--val-split", type=float, default=0.0,
+                       help="Fraction of synthetic samples to place in images/val (default: 0.0)")
 
     args = parser.parse_args()
 
@@ -181,17 +217,21 @@ def main():
 
     if args.num_gost > 0:
         print(f"\nGenerating {args.num_gost} GOST images...")
-        generate_gost_dataset(output_dir, args.num_gost, args.dpi, args.train_dir)
+        generate_gost_dataset(output_dir, args.num_gost, args.dpi, args.train_dir, args.val_split)
 
     if args.num_copy > 0:
         print(f"\nGenerating {args.num_copy} copy-paste images...")
         generate_copypaste_dataset(
             output_dir, args.num_copy, bg_dir, lbl_dir,
             donor_fnames=donor_fnames, train_subdir=args.train_dir,
+            val_split=args.val_split,
         )
 
     total = args.num_gost + args.num_copy
-    print(f"\nDone! Generated {total} synthetic images in {output_dir}")
+    val_count = 0
+    if args.val_split > 0:
+        val_count = len(list((output_dir / "images" / "val").glob("*"))) if (output_dir / "images" / "val").exists() else 0
+    print(f"\nDone! Generated {total} synthetic images ({total - val_count} train, {val_count} val) in {output_dir}")
 
 
 if __name__ == "__main__":

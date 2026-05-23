@@ -8,14 +8,12 @@ from evaluation.metrics import (
 )
 
 from models.cv_baseline import CVBaselineDetector
-from models.yolo_model import YOLOModel
 from models.rcnn_model import RCNNModel
 
 from hybrid.refiner import HybridRefiner
 
 __all__ = [
     "CVBaselineDetector",
-    "YOLOModel",
     "RCNNModel",
     "HybridRefiner",
     "bbox_iou",

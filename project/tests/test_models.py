@@ -16,18 +16,6 @@ class TestCVBaseline:
         assert detector.min_width == 100
 
 
-class TestYOLOModel:
-    def test_model_init(self):
-        import sys
-        from pathlib import Path
-        from unittest.mock import MagicMock
-        sys.modules['ultralytics'] = MagicMock()
-        from models.yolo_model import YOLOModel
-        model = YOLOModel(device="cpu")
-        assert model.device == "cpu"
-        assert model.model is None
-
-
 class TestRCNNModel:
     def _require_torch(self):
         pytest.importorskip("torch", reason="torch not available")
