@@ -22,6 +22,8 @@ artifacts/detr/
 # Synthetic data (generated, not committed)
 data/images/train*/
 data/labels/train*/
+data/images/val/
+data/labels/val/
 
 # OS
 .DS_Store
