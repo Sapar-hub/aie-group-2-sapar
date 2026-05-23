@@ -27,6 +27,13 @@ yolo:
   imgsz: 640
   batch: 16
   device: cpu
+  seed: 42
+  deterministic: true
+  rect: true
+  mosaic: 0.0
+  single_cls: true
+  project: artifacts
+  name: yolo_train
 
 rcnn:
   num_epochs: 30

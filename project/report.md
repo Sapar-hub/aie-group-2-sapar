@@ -74,7 +74,7 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 ### 4.2. YOLOv8n (одностадийный CNN)
 - Модель: yolov8n (pretrained on COCO)
 - Данные: 500 synthetic train / 49 real val (eval на 45 non-donor)
-- Параметры: 50 epochs, imgsz=640, batch=16, device=cpu (T4 GPU на Colab)
+- Параметры: 50 epochs, imgsz=640, batch=16, device=cpu, seed=42 (воспроизводимо)
 - Аугментации: стандартные из ultralytics (mosaic=0.0, flip, rotation)
 - Время обучения: ~144 мин (CPU) / ~5 мин (T4 GPU)
 

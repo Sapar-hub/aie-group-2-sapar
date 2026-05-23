@@ -126,19 +126,3 @@ class CVBaselineDetector:
         return [self.detect(img) for img in images]
 
 
-def load_config_defaults(config_path: Optional[Path] = None) -> dict:
-    defaults = {
-        "expected_aspect_ratio": 3.55,
-        "ar_tolerance": 0.25,
-        "min_width_px": 100,
-        "min_height_px": 30,
-        "block_size": 11,
-        "adaptive_threshold_c": 5,
-    }
-    if config_path and config_path.exists():
-        import yaml
-        with open(config_path) as f:
-            cfg = yaml.safe_load(f)
-        cv_cfg = cfg.get("cv_baseline", {})
-        defaults.update(cv_cfg)
-    return defaults

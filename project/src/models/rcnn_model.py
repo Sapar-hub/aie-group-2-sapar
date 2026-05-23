@@ -40,7 +40,7 @@ class RCNNModel:
         self.model.eval()
 
     def evaluate(self, val_loader) -> float:
-        self.model.train()
+        self.model.eval()
         val_loss = 0.0
         with torch.no_grad():
             for images, targets in val_loader:

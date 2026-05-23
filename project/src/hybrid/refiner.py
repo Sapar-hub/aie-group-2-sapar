@@ -37,7 +37,7 @@ class HybridRefiner:
             edges = cv2.Canny(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY), 50, 150)
             edge_density = np.sum(edges > 0) / edges.size
 
-            score = 1.0 - ar_diff / self.ar_refine_tol
+            score = max(0.0, 1.0 - ar_diff / self.ar_refine_tol)
             if edge_density > 0.1:
                 score += 0.2
 
