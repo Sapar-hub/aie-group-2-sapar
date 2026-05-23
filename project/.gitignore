@@ -20,8 +20,8 @@ artifacts/detr/
 # artifacts/pretrained/*.pt  — add to .gitignore if too large
 
 # Synthetic data (generated, not committed)
-data/images/train/
-data/labels/train/
+data/images/train*/
+data/labels/train*/
 
 # OS
 .DS_Store

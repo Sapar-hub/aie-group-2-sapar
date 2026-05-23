@@ -441,7 +441,7 @@ def generate_synthetic_from_real_stamps(
         # Scale original bbox to match transformed stamp size
         scale_w = s_w / ow if ow > 0 else 1.0
         scale_h = s_h / oh if oh > 0 else 1.0
-        new_bbox = (x_offset, y_offset, int(ow * scale_w), int(oh * scale_h))
+        new_bbox = (x_offset, y_offset, x_offset + int(ow * scale_w), y_offset + int(oh * scale_h))
         
         all_labels.append(normalize_bbox(np.array([0] + list(new_bbox)), bg_w, bg_h))
         

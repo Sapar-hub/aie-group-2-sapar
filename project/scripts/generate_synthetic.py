@@ -23,10 +23,10 @@ from data.synthetic import (
 from data.image_quality import select_donors
 
 
-def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200):
+def generate_gost_dataset(output_dir: Path, num_samples: int, dpi: int = 200, train_subdir: str = "train"):
     """Generate GOST-style synthetic stamps."""
-    img_dir = output_dir / "images" / "train"
-    lbl_dir = output_dir / "labels" / "train"
+    img_dir = output_dir / "images" / train_subdir
+    lbl_dir = output_dir / "labels" / train_subdir
     img_dir.mkdir(parents=True, exist_ok=True)
     lbl_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +50,7 @@ def generate_copypaste_dataset(
     label_dir: Path,
     donor_fnames: set = None,
     dpi: int = 200,
+    train_subdir: str = "train",
 ):
     """Generate copy-paste synthetic stamps.
 
@@ -65,8 +66,8 @@ def generate_copypaste_dataset(
     if donor_fnames:
         print(f"Using {len(donor_fnames)} donors as stamp sources: {sorted(donor_fnames)}")
 
-    img_dir = output_dir / "images" / "train"
-    lbl_dir = output_dir / "labels" / "train"
+    img_dir = output_dir / "images" / train_subdir
+    lbl_dir = output_dir / "labels" / train_subdir
     img_dir.mkdir(parents=True, exist_ok=True)
     lbl_dir.mkdir(parents=True, exist_ok=True)
 
@@ -143,6 +144,8 @@ def main():
                        help="Number of donor images for auto-selection (default: 4)")
     parser.add_argument("--donor-random-state", type=int, default=42,
                        help="Random state for donor selection (default: 42)")
+    parser.add_argument("--train-dir", type=str, default="train",
+                       help="Subdirectory name under images/ and labels/ (default: train)")
 
     args = parser.parse_args()
 
@@ -175,17 +178,17 @@ def main():
                 f.write(f"{name}\n")
         print(f"Donor list written to {donor_path}")
 
-    print(f"Output: {output_dir / 'images' / 'train'}")
+    print(f"Output: {output_dir / 'images' / args.train_dir}")
 
     if args.num_gost > 0:
         print(f"\nGenerating {args.num_gost} GOST images...")
-        generate_gost_dataset(output_dir, args.num_gost, args.dpi)
+        generate_gost_dataset(output_dir, args.num_gost, args.dpi, args.train_dir)
 
     if args.num_copy > 0:
         print(f"\nGenerating {args.num_copy} copy-paste images...")
         generate_copypaste_dataset(
             output_dir, args.num_copy, bg_dir, lbl_dir,
-            donor_fnames=donor_fnames, dpi=args.dpi,
+            donor_fnames=donor_fnames, dpi=args.dpi, train_subdir=args.train_dir,
         )
 
     total = args.num_gost + args.num_copy
