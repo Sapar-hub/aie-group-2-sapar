@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import io
 from pathlib import Path
@@ -24,10 +25,27 @@ model = None
 model_type = None
 
 
+def _find_yolo_weights() -> Path:
+    env_path = os.environ.get("MODEL_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.exists():
+            return p
+
+    candidates = [
+        Path("artifacts/models/best.pt"),
+        *sorted(Path("artifacts").glob("yolo/*/weights/best.pt")),
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return Path("artifacts/models/best.pt")
+
+
 def load_model():
     global model, model_type
 
-    yolo_path = Path("artifacts/models/best.pt")
+    yolo_path = _find_yolo_weights()
     rcnn_path = Path("artifacts/models/rcnn_best.pth")
 
     if yolo_path.exists():
