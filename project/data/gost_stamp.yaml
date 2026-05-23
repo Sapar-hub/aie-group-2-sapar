@@ -1,7 +1,7 @@
 # YOLO dataset config
-# Synthetic data for training
+# Synthetic data for training, real data for validation
 train: images/train_v2
-val: images/test
+val: images/val
 
 nc: 1
 names: ['stamp']
