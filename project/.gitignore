@@ -11,13 +11,8 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Large artifacts (trained weights — not committed)
-artifacts/yolo/
-artifacts/rcnn/
-artifacts/detr/
-
-# Pretrained weights (commit only small ones, <10MB)
-# artifacts/pretrained/*.pt  — add to .gitignore if too large
+# Pretrained weights (small, committed directly)
+# artifacts/pretrained/*.pt
 
 # Synthetic data (generated, not committed)
 data/images/train*/
