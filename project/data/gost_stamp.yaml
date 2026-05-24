@@ -1,7 +1,8 @@
-# YOLO dataset config
-# Synthetic data for training, real data for validation
-train: images/train_v2
-val: images/val
+# YOLO dataset config — v3 clean baseline
+# Train: all 500 synthetic (GOST + copy-paste, from scratch, no 80/20 split)
+# Val: 10 real non-donor images (stratified selection, unseen stamps)
+train: images/train_v3
+val: images/val_honest
 
 nc: 1
 names: ['stamp']

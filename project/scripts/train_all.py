@@ -14,12 +14,19 @@ from models.train_yolo import train_yolo
 
 
 DONORS_FILE = Path(__file__).parent.parent / "data" / "donors.txt"
+VAL_HONEST_DIR = Path(__file__).parent.parent / "data" / "images" / "val_honest"
 
 
 def _load_donors() -> set:
     if DONORS_FILE.exists():
         with open(DONORS_FILE) as f:
             return set(line.strip() for line in f if line.strip())
+    return set()
+
+
+def _load_val_images() -> set:
+    if VAL_HONEST_DIR.exists():
+        return set(p.name for p in sorted(VAL_HONEST_DIR.glob("*.png")) + sorted(VAL_HONEST_DIR.glob("*.jpg")))
     return set()
 
 
@@ -37,10 +44,12 @@ def main():
 
     model = YOLO(str(best_pt))
     donors = _load_donors()
+    val_images = _load_val_images()
+    exclude = donors | val_images
 
     image_test_dir = data_dir / "images" / "test"
     label_test_dir = data_dir / "labels" / "test"
-    metrics, _ = evaluate_yolo(model, image_test_dir, label_test_dir, donors)
+    metrics, _ = evaluate_yolo(model, image_test_dir, label_test_dir, exclude)
     print_metrics(metrics, prefix="YOLO ")
 
 

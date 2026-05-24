@@ -1,5 +1,6 @@
 import random
 import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +25,7 @@ def train_yolo(
     config_path: Path = Path("configs/config.yaml"),
     project: Optional[str] = None,
     name: Optional[str] = None,
+    yaml_name: str = "gost_stamp.yaml",
 ) -> Path:
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
@@ -54,8 +56,15 @@ def train_yolo(
     )
 
     model = YOLO(f"{model_name}.pt")
+    output_dir = Path(project) / name
+    if output_dir.exists():
+        logger.warning(
+            "Output directory %s already exists. Removing it to avoid YOLO auto-suffix.",
+            output_dir,
+        )
+        shutil.rmtree(str(output_dir))
     model.train(
-        data=str(data_dir / "gost_stamp.yaml"),
+        data=str(data_dir / yaml_name),
         epochs=yolo_cfg.get("epochs", 50),
         imgsz=yolo_cfg.get("imgsz", 640),
         batch=yolo_cfg.get("batch", 16),

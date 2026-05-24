@@ -278,6 +278,7 @@ def select_donors(
     label_dir: Path,
     n_donors: int = 4,
     random_state: int = 42,
+    exclude: Optional[set] = None,
 ) -> List[str]:
     """Select donor images for synthetic data generation.
 
@@ -291,6 +292,7 @@ def select_donors(
         label_dir: Directory with YOLO label files.
         n_donors: Number of donors to select.
         random_state: Seed for fallback tie-breaking.
+        exclude: Optional set of filenames to skip.
 
     Returns:
         Sorted list of donor filenames.
@@ -309,6 +311,9 @@ def select_donors(
     skipped: List[Tuple[str, str]] = []
 
     for img_path in image_paths:
+        if exclude and img_path.name in exclude:
+            skipped.append((img_path.name, "excluded"))
+            continue
         try:
             img, labels = load_image_and_labels(img_path, label_dir)
         except (FileNotFoundError, IOError) as e:

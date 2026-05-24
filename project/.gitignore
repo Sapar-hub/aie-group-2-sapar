@@ -24,6 +24,8 @@ data/images/train*/
 data/labels/train*/
 data/images/val/
 data/labels/val/
+data/images/val_honest/
+data/labels/val_honest/
 
 # OS
 .DS_Store
