@@ -1,7 +1,7 @@
-# YOLO dataset config — v3 clean baseline
-# Train: all 500 synthetic (GOST + copy-paste, from scratch, no 80/20 split)
-# Val: 10 real non-donor images (stratified selection, unseen stamps)
-train: images/train_v3
+# YOLO dataset config — v4 harder mix
+# Train: 500 synthetic (50 GOST + 250 copy-paste + 200 GOST-on-real-background)
+# Val: 10 real non-donor images (regenerated to exclude new donors)
+train: images/train_v4
 val: images/val_honest
 
 nc: 1

@@ -275,6 +275,83 @@ def generate_synthetic_from_real(
     return canvas, label, {"stamp_bbox": [x, y, sw, sh], "background_shape": background_img.shape}
 
 
+def generate_synthetic_image_on_background(
+    background: np.ndarray,
+    form_name: str = None,
+    dpi: int = 200,
+    paper_size: str = None,
+    corner: str = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    """Render GOST stamp grid onto a real background image.
+
+    The background already contains organic blueprint content, so
+    add_drawing_content() is skipped to avoid a double-exposure effect.
+    Artifacts (noise, blur, rotation) are added for robustness.
+
+    Args:
+        background: Real background image (BGR, loaded via cv2).
+        form_name: GOST form key (default: random).
+        dpi: Rendering DPI.
+        paper_size: ISO paper size key (default: random).
+        corner: Where to place the stamp (default: random).
+
+    Returns:
+        (canvas, label, metadata) tuple matching generate_synthetic_image().
+    """
+    form_name = form_name or random.choice(list(GOST_FORMS.keys()))
+    paper_size = paper_size or random.choice(list(PAPER_SIZES.keys()))
+    corner = corner or random.choice(["bottom_right", "bottom_left", "top_right", "top_left"])
+
+    form = GOST_FORMS[form_name]
+    w_mm, h_mm = PAPER_SIZES[paper_size]
+
+    target_w = mm_to_pixels(w_mm, dpi)
+    target_h = mm_to_pixels(h_mm, dpi)
+
+    if random.random() < 0.5:
+        target_w, target_h = target_h, target_w
+
+    bg = cv2.resize(background, (target_w, target_h), interpolation=cv2.INTER_AREA)
+
+    stamp = create_stamp_grid(form_name, dpi)
+    stamp_h, stamp_w = stamp.shape[:2]
+
+    margin = max(20, dpi // 4)
+    corners = {
+        "bottom_right": (max(0, target_w - stamp_w - margin), max(0, target_h - stamp_h - margin)),
+        "bottom_left": (margin, max(0, target_h - stamp_h - margin)),
+        "top_right": (max(0, target_w - stamp_w - margin), margin),
+        "top_left": (margin, margin),
+    }
+    x, y = corners[corner]
+
+    stamp_h_f = min(stamp_h, target_h - y)
+    stamp_w_f = min(stamp_w, target_w - x)
+    bg[y:y+stamp_h_f, x:x+stamp_w_f] = stamp[:stamp_h_f, :stamp_w_f]
+
+    canvas = add_artifacts(bg, random.choice(["low", "medium", "high"]))
+
+    label = np.array([
+        0,
+        (x + stamp_w_f / 2) / target_w,
+        (y + stamp_h_f / 2) / target_h,
+        stamp_w_f / target_w,
+        stamp_h_f / target_h,
+    ])
+
+    metadata = {
+        "form_name": form_name,
+        "form_width_mm": form["width_mm"],
+        "form_height_mm": form["height_mm"],
+        "dpi": dpi,
+        "paper_size": paper_size,
+        "corner": corner,
+        "stamp_bbox": [x, y, stamp_w_f, stamp_h_f],
+    }
+
+    return canvas, label, metadata
+
+
 def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -> List[dict]:
     output_dir = Path(output_dir)
     img_dir = output_dir / "images" / "train"

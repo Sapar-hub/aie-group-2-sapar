@@ -21,3 +21,6 @@ data/labels/val/
 .DS_Store
 Thumbs.db
 *.cache
+
+# Pretrained model weights (downloaded by ultralytics)
+yolov8n.pt
