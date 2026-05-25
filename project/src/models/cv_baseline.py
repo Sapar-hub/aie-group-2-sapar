@@ -362,5 +362,4 @@ class CVBaselineDetector:
             return (x + ox, y + oy, cw, ch)
         return None
 
-    def detect_batch(self, images: List[np.ndarray]) -> List[Optional[Tuple[int, int, int, int]]]:
-        return [self.detect(img) for img in images]
+

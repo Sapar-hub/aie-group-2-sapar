@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-import numpy as np
 from ultralytics import YOLO
 
 from evaluation.metrics import (

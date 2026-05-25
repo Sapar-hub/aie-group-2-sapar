@@ -80,13 +80,3 @@ class TestHybridRefiner:
         result = refiner.refine([], blank)
         assert result is None
 
-    def test_filter_by_ar(self):
-        from hybrid.refiner import HybridRefiner
-        refiner = HybridRefiner()
-        bboxes = [
-            (0, 0, 355, 100),
-            (0, 0, 100, 100),
-            (0, 0, 200, 100),
-        ]
-        filtered = refiner.filter_by_aspect_ratio(bboxes, ar_tol=0.25)
-        assert len(filtered) == 1

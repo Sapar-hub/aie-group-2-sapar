@@ -1,13 +1,11 @@
 import logging
 import os
 import sys
-import io
 from pathlib import Path
 
 import cv2
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
 
 from api.schemas import HealthResponse, PredictionResponse, BoundingBox
 

@@ -1,9 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
-
-
-class PredictRequest(BaseModel):
-    pass
 
 
 class BoundingBox(BaseModel):

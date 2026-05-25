@@ -54,17 +54,3 @@ class HybridRefiner:
         candidates.sort(key=lambda c: c["score"], reverse=True)
         return candidates[0]["bbox"]
 
-    def filter_by_aspect_ratio(
-        self,
-        bboxes: List[Tuple[int, int, int, int]],
-        ar_tol: Optional[float] = None,
-    ) -> List[Tuple[int, int, int, int]]:
-        if ar_tol is None:
-            ar_tol = self.ar_refine_tol
-
-        filtered = []
-        for x, y, w, h in bboxes:
-            ar = w / h if h > 0 else 0
-            if abs(ar - self.expected_ar) / self.expected_ar <= ar_tol:
-                filtered.append((x, y, w, h))
-        return filtered

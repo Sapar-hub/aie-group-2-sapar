@@ -91,7 +91,7 @@ project/
 │   ├── models/                   # Веса (фактически в yolo/exp01/)
 │   ├── figures/                  # 7 графиков
 │   ├── metrics/                  # EDA summary, YOLO results
-│   └── yolo/exp01/weights/       # best.pt (6 MB, 50 эпох)
+│   └── yolo/exp04/weights/       # best.pt (6 MB, 50 эпох)
 └── scripts/
     ├── generate_synthetic.py
     └── train_all.py
@@ -145,7 +145,7 @@ python -m scripts.generate_synthetic
 Перед запуском скопируйте веса YOLO в ожидаемую директорию:
 
 ```bash
-cp artifacts/yolo/exp01/weights/best.pt artifacts/models/best.pt
+cp artifacts/yolo/exp04/weights/best.pt artifacts/models/best.pt
 python -m src.api.main
 ```
 
@@ -173,23 +173,25 @@ pytest tests -v
 
 ## 5. Результаты экспериментов
 
-| Модель | IoU mean | Precision | Recall | F1 | Detection rate | Время обучения |
-|--------|----------|-----------|--------|-----|---------------|----------------|
-| CV Baseline | 0.330 | 0.490 | 0.490 | 0.490 | 49.0% | — |
-| YOLOv8n | **0.880** | **1.000** | **1.000** | **1.000** | **100%** | ~2.5 часа (CPU) |
-| Faster R-CNN | — | — | — | — | — | (ожидает) |
-| Hybrid (YOLO+CV) | — | — | — | — | — | (ожидает) |
+| Модель | Версия данных | Выборка | IoU mean | Precision | Recall | F1 | Detection rate |
+|--------|---------------|---------|----------|-----------|--------|-----|---------------|
+| CV Baseline | v3 (обновлён) | 35 real (non-val, non-donor) | 0.633 | 0.800 | 0.686 | 0.738 | 85.7% |
+| YOLOv8n | v3 (clean) | 35 real (non-val, non-donor) | **0.700** | **1.000** | 0.778 | **0.875** | 77.8% |
+| Faster R-CNN | v2* | 45 real (non-donor) | **0.731** | 0.949 | **0.822** | **0.881** | **86.7%** |
+| Hybrid (YOLO+CV) | — | — | — | — | — | — | — |
 
-> **Примечание:** Метрики Faster R-CNN и гибрида — после запуска ноутбуков exp05/exp06/exp07 на Colab.
+> **\*** Faster R-CNN v2 оценён на 45 изображениях (включает 10 val, не исключённых из теста) — не полностью сопоставим со строками v3. Подробнее об утечках данных: [data/LEAKAGE.md](data/LEAKAGE.md).
 
 ---
 
 ## 6. Данные
 
-- 49 изображений строительных чертежей с разметкой штампов в формате YOLO
+- 49 реальных изображений строительных чертежей с разметкой штампов в формате YOLO
 - Источники: `https://2d-3d.ru/`
 - 500 синтетических изображений (250 GOST + 250 copy-paste)
-- Предотвращение утечки данных: штампы вырезаются только из 4 изображений-доноров
+- **Чистый baseline (v3):** 500 синтетических на train, 10 реальных non-donor на val (`val_honest`), тест на 35 non-donor, non-val
+- Предотвращение утечки: штампы вырезаются только из 4 изображений-доноров; фон copy-paste — из 20 независимых изображений
+- История утечек (v1/v2/v3) задокументирована в [data/LEAKAGE.md](data/LEAKAGE.md) и [data/README.md](data/README.md)
 
 ---
 

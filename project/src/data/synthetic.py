@@ -196,27 +196,6 @@ def crop_stamp_from_image(image: np.ndarray, labels: np.ndarray, margin: float =
     return np.array([])
 
 
-def clean_background(image: np.ndarray, label: np.ndarray) -> np.ndarray:
-    """Fill stamp bbox with local noise to erase original stamp."""
-    h, w = image.shape[:2]
-    _, cx, cy, bw, bh = label
-    x1 = int((cx - bw / 2) * w)
-    y1 = int((cy - bh / 2) * h)
-    x2 = int((cx + bw / 2) * w)
-    y2 = int((cy + bh / 2) * h)
-    x1, y1 = max(0, x1), max(0, y1)
-    x2, y2 = min(w, x2), min(h, y2)
-    if x2 <= x1 or y2 <= y1:
-        return image.copy()
-    roi = image[y1:y2, x1:x2]
-    mean = roi.mean(axis=(0, 1))
-    std = roi.std(axis=(0, 1))
-    noise = np.clip(np.random.normal(mean, std, roi.shape), 0, 255).astype(np.uint8)
-    cleaned = image.copy()
-    cleaned[y1:y2, x1:x2] = noise
-    return cleaned
-
-
 def resize_stamp_for_bg(
     stamp: np.ndarray,
     bg_w: int,
@@ -352,27 +331,7 @@ def generate_synthetic_image_on_background(
     return canvas, label, metadata
 
 
-def generate_dataset(output_dir: Path, num_samples: int = 100, dpi: int = 200) -> List[dict]:
-    output_dir = Path(output_dir)
-    img_dir = output_dir / "images" / "train"
-    lbl_dir = output_dir / "labels" / "train"
-    img_dir.mkdir(parents=True, exist_ok=True)
-    lbl_dir.mkdir(parents=True, exist_ok=True)
 
-    metadata_list = []
-    for i in range(num_samples):
-        img, label, meta = generate_synthetic_image(dpi=dpi)
-
-        img_path = img_dir / f"synth_{i:04d}.png"
-        cv2.imwrite(str(img_path), img)
-
-        lbl_path = lbl_dir / f"synth_{i:04d}.txt"
-        with open(lbl_path, "w") as f:
-            f.write(f"{int(label[0])} {label[1]:.6f} {label[2]:.6f} {label[3]:.6f} {label[4]:.6f}\n")
-
-        metadata_list.append({**meta, "image": img_path.name})
-
-    return metadata_list
 
 
 
