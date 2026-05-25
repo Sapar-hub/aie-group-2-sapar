@@ -84,6 +84,18 @@ def load_val_honest(cfg: Optional[dict] = None) -> set:
     return set(p.name for p in sorted(val_dir.glob("*.png")) + sorted(val_dir.glob("*.jpg")))
 
 
+def get_eval_weights(cfg: Optional[dict] = None) -> Path:
+    if cfg is None:
+        cfg = load_config()
+    weights = cfg.get("evaluation", {}).get("yolo_weights")
+    if not weights:
+        raise KeyError("evaluation.yolo_weights not found in config")
+    p = Path(weights)
+    if not p.is_absolute():
+        p = project_root() / p
+    return p
+
+
 def test_image_dir(cfg: Optional[dict] = None) -> Path:
     if cfg is None:
         cfg = load_config()
