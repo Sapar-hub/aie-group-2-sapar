@@ -11,5 +11,6 @@
   "precision": 1.0,
   "recall": 0.778,
   "f1": 0.875,
-  "detection_rate": 0.778
+  "detection_rate": 0.778,
+  "n_images": 35
 }
