@@ -3,10 +3,10 @@ DATA_DIR: data
 paths:
   images_test: data/images/test
   labels_test: data/labels/test
-  images_train: data/images/train_v2
-  labels_train: data/labels/train_v2
-  images_val: data/images/val
-  labels_val: data/labels/val
+  images_train: data/images/train_v4
+  labels_train: data/labels/train_v4
+  images_val_honest: data/images/val_honest
+  labels_val_honest: data/labels/val_honest
   artifacts: artifacts
 
 model:
@@ -52,8 +52,10 @@ hybrid:
 synthetic:
   donor_count: 4
   donor_random_state: 42
-  num_gost: 250
+  num_total: 500
+  num_gost: 50
   num_copypaste: 250
+  # num_gost_on_bg = num_total - num_gost - num_copypaste = 200
 
 evaluation:
   iou_thresholds:
