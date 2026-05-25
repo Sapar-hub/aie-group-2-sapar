@@ -1,138 +1,181 @@
-# Data Leakage History & Fix
+# История утечки данных и её исправление
 
-## Background
+## Предыстория
 
-This document records the data leakage issues discovered during the development
-of the GOST stamp detection pipeline, and the steps taken to fix them.
+В этом документе зафиксированы проблемы утечки данных, обнаруженные в ходе разработки
+пайплайна детекции штампов ГОСТ, и шаги по их устранению.
 
-The core problem: **copy-paste synthetic data used test-set images as backgrounds**,
-allowing the model to memorise background textures rather than learning stamp
-features. This inflated all metrics.
+Ключевая проблема: **copy-paste синтетические данные использовали тестовые изображения
+в качестве фонов**, что позволяло модели запоминать текстуры фонов вместо признаков
+штампа. Это завышало все метрики.
 
 ---
 
-## v1 — Contaminated
+## v1 — Загрязнённый
 
-| Aspect | Detail |
+| Аспект | Детали |
 |--------|--------|
-| **Train** | 500 synthetic images (250 GOST + 250 copy-paste) |
-| **Copy-paste backgrounds** | **Test-set images** (49 real images) |
-| **Donors** | 4 stamp sources from the test set |
-| **Val** | Synthetic (80/20 split of the 500) |
-| **Test** | 49 real images (4 donors excluded → 45 eval) |
-| **Metrics** | IoU **0.880**, Precision **1.0**, Recall **1.0**, F1 **1.0** |
+| **Train** | 500 синтетических (250 GOST + 250 copy-paste) |
+| **Фоны copy-paste** | **Тестовые изображения** (49 real) |
+| **Доноры** | 4 источника штампов из тестовой выборки |
+| **Val** | Синтетический (80/20 сплит от 500) |
+| **Test** | 49 реальных (4 донора исключены → 45 eval) |
+| **Метрики** | IoU **0.880**, Precision **1.0**, Recall **1.0**, F1 **1.0** |
 
-**Problem:** Copy-paste pasted stamps onto backgrounds that were themselves
-test-set images. The model saw test-background textures during training and
-achieved unrealistically perfect precision/recall. The 1.0 metrics are a
-clear sign of leakage.
+**Проблема:** Copy-paste вставлял штампы на фоны, которые сами были тестовыми
+изображениями. Целевой класс (штамп) накладывался корректно — разметка не была
+загрязнена, — но **фон тестовых изображений был виден модели при обучении**.
+Модель выучила: фон теста = отсутствие штампа (low confidence), а штамп на фоне
+теста = детекция. Это давало нечестное преимущество — она узнавала не штамп,
+а сам факт наложения на тестовый фон. Метрики 1.0 — явный признак такой утечки.
 
-**Result files:** `artifacts/metrics/yolo_v1_results.json`, `yolo_v1_runs.csv`
+**Файлы:** `artifacts/metrics/yolo_v1_results.json`
 
 ---
 
-## v2 — Backgrounds fixed, val still synthetic
+## v2 — Фоны исправлены, val остался синтетическим
 
-| Aspect | Detail |
+| Аспект | Детали |
 |--------|--------|
-| **Train** | 408 synthetic (204 GOST + 204 copy-paste, 80% of 500) |
-| **Copy-paste backgrounds** | **20 independent images** from `data/unlabeled/` |
-| **Donors** | Same 4 stamp sources from the test set |
-| **Val** | 92 synthetic (46 GOST + 46 copy-paste, 20% of 500) |
-| **Test** | 49 real images (4 donors excluded → 45 eval) |
-| **Metrics** | IoU **0.765**, Precision **1.0**, Recall **0.844**, F1 **0.916** |
+| **Train** | 408 синтетических (204 GOST + 204 copy-paste, 80% от 500) |
+| **Фоны copy-paste** | **20 независимых изображений** из `data/unlabeled/` |
+| **Доноры** | Те же 4 источника штампов |
+| **Val** | 92 синтетических (46 GOST + 46 copy-paste, 20% от 500) |
+| **Test** | 49 реальных (4 донора исключены → 45 eval) |
+| **Метрики** | IoU **0.765**, Precision **1.0**, Recall **0.844**, F1 **0.916** |
 
-**Fix:** Backgrounds for copy-paste changed from test images to 20 independently
-sourced unlabeled images from `data/unlabeled/`. Background leakage closed.
+**Исправление:** Фоны для copy-paste заменены с тестовых на 20 независимых
+изображений из `data/unlabeled/`. Утечка фона закрыта.
 
-**Remaining issue:** The YOLO validation split during training (92 synthetic
-images) shares the same donor stamps with the training set. This means
-hyperparameter tuning through validation could overfit to donor stamp appearances.
-The real test set (45 non-donor images) provides the only unbiased signal.
+**Оставшаяся проблема:** Валидационный сплит YOLO (92 синтетических) разделяет
+те же донорские штампы с тренировочным набором. Гиперпараметры могли
+переобучаться на внешний вид доноров. Реальный тест (45 non-donor) —
+единственный честный сигнал.
 
-**Result files:** `artifacts/metrics/yolo_v2_results.json`, `yolo_v2_runs.csv`
+**Файлы:** `artifacts/metrics/yolo_v2_results.json`
 
 ---
 
-## v3 — Clean baseline
+## v3 — Чистый baseline
 
-| Aspect | Detail |
+| Аспект | Детали |
 |--------|--------|
-| **Train** | 500 synthetic (250 GOST + 250 copy-paste, **all train, no 80/20 split**) |
-| **Copy-paste backgrounds** | 20 independent images from `data/unlabeled/` |
-| **Donors** | Same 4 stamp sources from the test set |
-| **Val** | **10 real non-donor images** (`val_honest/`, stratified selection) |
-| **Test** | **35 real non-donor, non-val images** (4 donors + 10 val excluded) |
-| **Status** | **Computed** — see `yolo_v3_results.json` |
+| **Train** | 500 синтетических (250 GOST + 250 copy-paste, **весь набор, без 80/20**) |
+| **Фоны copy-paste** | 20 изображений из `data/unlabeled/` |
+| **Доноры** | Те же 4 источника штампов |
+| **Val** | **10 реальных non-donor** (`val_honest/`, стратифицированный отбор) |
+| **Test** | **35 реальных non-donor, non-val** (4 донора + 10 val исключены) |
+| **Статус** | **Посчитаны** — см. `yolo_v3_results.json` |
 
-**Fixes:**
-1. **Copy-paste backgrounds** — already fixed since v2 (independent sources)
-2. **YOLO validation** — changed from synthetic (shared donor stamps) to 10 real
-   non-donor images selected via stratified sampling (PPI × sharpness × stamp size)
-3. **All synthetic data for training** — removed the 80/20 split; all 500
-   synthetic images used for training
-4. **Test set** — reduced to 35 images (10 val + 4 donors excluded)
+**Исправления:**
+1. **Фоны copy-paste** — уже исправлены с v2 (независимые источники)
+2. **Валидация YOLO** — заменена с синтетической (общие доноры) на 10 реальных
+   non-donor, отобранных стратифицированно (PPI × резкость × размер штампа)
+3. **Все синтетические данные на train** — убран 80/20 сплит, все 500 на обучение
+4. **Тест** — сокращён до 35 (10 val + 4 донора исключены)
 
-**Result files:** `artifacts/metrics/yolo_v3_results.json`, `yolo_v3_runs.csv`
-
----
-
-## Comparison table
-
-| Version | Train | Val (YOLO) | Test | Background leak? | Val leak? | IoU | F1 |
-|---------|-------|-----------|------|-----------------|-----------|-----|-----|
-| v1 | 500 synth (80% split) | 92 synth | 45 real | **YES** | no | 0.880 | 1.000 |
-| v2 | 408 synth (80% split) | 92 synth | 45 real | fixed | minor* | 0.765 | 0.916 |
-| v3 | 500 synth (all train) | 10 real | 35 real | fixed | fixed | **0.700** | **0.875** |
-
-\* Minor: val shared donor stamps with train, but v2 metrics are on real test images so largely unaffected.
+**Файлы:** `artifacts/metrics/yolo_v3_results.json`
 
 ---
 
-## v4 — Harder synthetic mix (current)
+## Сравнительная таблица
 
-| Aspect | Detail |
+| Версия | Train | Val (YOLO) | Test | Утечка фона? | Утечка val? | IoU | F1 |
+|--------|-------|-----------|------|-------------|------------|-----|-----|
+| v1 | 500 synth (80%) | 92 synth | 45 real | **ДА** | нет | 0.880 | 1.000 |
+| v2 | 408 synth (80%) | 92 synth | 45 real | исправлено | незначит. | 0.765 | 0.916 |
+| v3 | 500 synth (все) | 10 real | 35 real | исправлено | исправлено | **0.700** | **0.875** |
+
+---
+
+## Почему v1–v3 невоспроизводимы
+
+Все три версии зависят от окружения и пайплайна, которые изменились:
+
+- **v1** — утечка фона (copy-paste на тестовых изображениях). Кроме того, 80/20 сплит и
+  старый PPI-пайплайн. Даже перезапуск того же кода даст другие синтетические изображения
+  из-за RNG.
+- **v2** — фон починен, но val-сплит (92 synth) разделяет доноров с train. 80/20 сплит
+  тоже невоспроизводим — random split даст другое разбиение.
+- **v3** — **Отбор доноров** зависел от PPI-пайплайна до его доработки (27/49 изображений имели PPI).
+  После настройки `infer_ppi_from_dimensions()` покрытие расширилось до 49/49, что изменило
+  стратификацию `select_donors()` и, как следствие, список доноров.
+- **Val_honest** стратифицирован по PPI × резкость × размер штампа — те же 10 изображений
+  не гарантированно отберутся повторно.
+- **Copy-paste фоны** (20 изображений) детерминированы, но `random.choice()` для позиции
+  вставки зависит от состояния RNG Python/NumPy, которое может различаться между
+  Python 3.10–3.14.
+- **Генерация синтетики** (GOST-рисование) использует `cv2.putText` и `np.random` —
+  minor differences in font rendering / random offsets между OpenCV версий.
+
+**Итог:** v1–v3 — воспроизводимые артефакты только в той же Colab-сессии с тем же
+снэпшотом окружения. На другой машине / версии Python синтетические изображения будут
+отличаться. Метрики v1–v3 сохраняются как историческая запись процесса обучения, но
+**не являются воспроизводимыми** вне оригинальной Colab-сессии. Только v4 полностью
+воспроизводима в текущем окружении.
+
+---
+
+## v4 — Сложная синтетическая смесь (текущая)
+
+| Аспект | Детали |
 |--------|--------|
-| **Train** | 500 synthetic: 50 GOST + 250 copy-paste + 200 GOST-on-real-background |
-| **Donors** | New set (`test_11.png`, `test_17.png`, `test_23.png`, `test_42.png`) |
-| **Copy-paste backgrounds** | 20 independent images from `data/unlabeled/` |
-| **GOST** | Reduced 250→50 to limit "white canvas shortcut" samples |
-| **GOST-on-real-bg** | Stamp grid rendered on real unlabeled backgrounds; no synthetic doodles, realistic textures |
-| **Val** | **10 real non-donor images** (`val_honest/`, regenerated to exclude new donors) |
-| **Test** | **35 real non-donor, non-val images** (4 new donors + 10 new val excluded) |
+| **Train** | 500 синтетических: 50 GOST + 250 copy-paste + 200 GOST-on-real-background |
+| **Доноры** | Новый набор (`test_11.png`, `test_17.png`, `test_23.png`, `test_42.png`) |
+| **Фоны copy-paste** | 20 изображений из `data/unlabeled/` |
+| **GOST** | Уменьшен 250→50 для ограничения "white canvas shortcut" |
+| **GOST-on-real-bg** | Сетка штампа на реальных фонах; без synthetic doodles, реалистичные текстуры |
+| **Val** | **10 реальных non-donor** (`val_honest/`, перегенерирован с исключением новых доноров) |
+| **Test** | **35 реальных non-donor, non-val** (4 новых донора + 10 новых val исключены) |
 
-**Why donors changed:** The PPI extraction pipeline (`get_ppi()` → `infer_ppi_from_dimensions()` → `estimate_paper_size_by_ratio()`) was tuned, expanding PPI coverage from 27/49 → 49/49 images. Method distribution shifted from `metadata: 23, no_ppi_available: 22, iso_inference: 2, mismatch: 2` to `iso_inference: 26, iso_override_contradiction: 14, metadata: 9`. Since `select_donors()` stratifies on PPI (2-bin quantize → 8-cell grid → rare-first), the new PPI vectors caused different donors to be selected. The algorithm is deterministic at `random_state=42` — same code produces the same donors every run.
+**Почему изменились доноры:** PPI-пайплайн (`get_ppi()` → `infer_ppi_from_dimensions()`
+→ `estimate_paper_size_by_ratio()`) был доработан, расширив покрытие PPI с 27/49 до
+49/49 изображений. Распределение методов: было `metadata: 23, no_ppi_available: 22,
+iso_inference: 2, mismatch: 2`, стало `iso_inference: 26, iso_override_contradiction: 14,
+metadata: 9`. Так как `select_donors()` стратифицирует по PPI (2-bin quantize → 8-cell grid
+→ rare-first), новые PPI-векторы привели к другим донорам. Алгоритм детерминирован при
+`random_state=42`.
 
-**Why synthetic mix changed:**
-- v3 had Precision=**1.0**, Recall=**0.778** — the model never false-positives on non-white backgrounds but misses stamps on messy real drawings
-- Analysis: GOST images start on a blank white canvas with light gray doodles — nothing like real yellowed, creased blueprints. The model shortcuts on "white grid background = stamp".
-- Fix: Reduced GOST from 250→50 (fewer easy samples), added 200 GOST-on-real-background (stamp grid on real unlabeled backgrounds) to force learning grids on realistic textures. Copy-paste kept at 250.
+**Почему изменился состав синтетики:**
+- v3 имел Precision=**1.0**, Recall=**0.778** — модель никогда не ложно-положительна на
+  не-белых фонах, но пропускает штампы на реальных чертежах
+- Анализ: GOST рисуется на белом холсте со светло-серыми украшениями — ничего общего
+  с реальными пожелтевшими чертежами. Модель использует shortcut "сетка на белом = штамп"
+- Исправление: GOST уменьшен 250→50, добавлено 200 GOST-on-real-background (сетка на
+  реальных фонах). Copy-paste оставлен 250.
+- **Важно:** Precision=1.0 в v3 достигался не за счёт качества детекции штампа,
+  а за счёт shortcut'а: модель выучила, что штамп всегда на белом фоне с сеткой
+  (GOST) или на unlabeled фоне (copy-paste), и никогда не выдаёт false positive
+  на других фонах. Это не признак хорошей детекции, а признак переобучения
+  на узкий домен фонов.
 
-**Result files:** `artifacts/metrics/yolo_v4_results.json` ✅
+**Файлы:** `artifacts/metrics/yolo_v4_results.json` ✅
 
 ---
 
-### Hybrid (v4 + CV refinement)
+### Гибрид (v4 + CV уточнение)
 
-The refiner fuses YOLOv8n confidence scores with CV features (aspect ratio, edge density)
-at `cnn_weight=0.6` (config `hybrid.cnn_weight`). Improves YOLO v4 top-1 confidence F1
-from **0.678 → 0.712** (+0.034).
+Уточнитель комбинирует confidence YOLOv8n с CV-признаками (aspect ratio, edge density)
+при `cnn_weight=0.6` (конфиг `hybrid.cnn_weight`). Улучшает YOLO v4 top-1 F1
+с **0.678 → 0.712** (+0.034).
 
-Hybrid does **not** improve v3 (F1 unchanged at 0.857) — the v3 model already achieves
-Precision=0.964 via the "white canvas shortcut"; CV refinement has nothing to add.
+Гибрид **не улучшает** v3 (F1 падает с 0.857 до 0.757, −0.100) — модель v3
+использует shortcut "белый фон = штамп" для Precision=0.964, но CV-уточнение
+снижает recall, так как отбрасывает часть "уверенных" предсказаний
+по aspect ratio / edge density.
 
-**Result files:** `artifacts/metrics/hybrid_results.json`
+**Файлы:** `artifacts/metrics/hybrid_results.json`
 
 ---
 
-## Academic note
+## Академическое замечание
 
-These result files are kept as a historical record of the learning process:
+Файлы результатов сохраняются как историческая запись процесса обучения:
 
-- `yolo_v1_results.json` — leaked (do not cite as valid)
-- `yolo_v2_results.json` — partially contaminated validation (acceptable for
-  hyperparameter tuning, test metrics are clean)
-- `yolo_v3_results.json` — clean baseline (reference for all future work) ✅
+- `yolo_v1_results.json` — утечка (не цитировать как валидные)
+- `yolo_v2_results.json` — частично загрязнённая валидация (приемлемо для
+  подбора гиперпараметров, тестовые метрики чисты)
+- `yolo_v3_results.json` — чистый baseline (ориентир для будущих работ) ✅
 
-This reflects the principle of **keeping mistakes documented rather than
-erasing them**, which is stronger academic practice.
+Это отражает принцип **документирования ошибок вместо их стирания** —
+более сильная академическая практика.

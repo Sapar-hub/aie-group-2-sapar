@@ -4,9 +4,9 @@
 
 | Файл | Описание | Тестов | Статус |
 |------|----------|--------|--------|
-| `test_metrics.py` | Модульные тесты метрик: IoU, YOLO conversion, precision/recall/F1 | 10 | ✅ Все проходят |
+| `test_metrics.py` | Модульные тесты метрик: IoU, YOLO-конвертация, precision/recall/F1 | 10 | ✅ Все проходят |
 | `test_models.py` | Тесты моделей: CV baseline, YOLO (mock), Hybrid refiner | 6 | ✅ 5 проходят, 1 пропущен |
-| `test_pipeline.py` | End-to-end sanity checks | — | ❌ Не реализован |
+| `test_pipeline.py` | Сквозные sanity-проверки | — | ❌ Не реализован |
 
 ## Запуск
 

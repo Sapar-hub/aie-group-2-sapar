@@ -30,33 +30,34 @@
 
 **Источники:**
 - 49 реальных изображений строительных чертежей из открытых источников (https://2d-3d.ru) с ручной разметкой штампов в формате YOLO
-- 500 синтетических изображений (250 GOST + 250 copy-paste), сгенерированных автоматически
+- 500 синтетических изображений, сгенерированных автоматически в 4 версиях (v1–v4)
 
-**Структура:**
+**Текущая версия (v4):**
+- 500 синтетических: 50 GOST + 250 copy-paste + 200 GOST-on-real-background
+- Train: все 500; Val: 10 реальных non-donor (`val_honest/`); Test: 35 real non-donor, non-val
+- v4 отличается от v3: сокращён GOST (250→50), добавлен GOST-on-real-bg (200), обновлены доноры
+
+**Структура (v4):**
 ```
 data/
 ├── images/
-│   ├── test/        # 49 реальных (31 PNG + 18 JPG)
-│   └── train/       # 500 synthetic (PNG)
+│   ├── test/          # 49 реальных (31 PNG + 18 JPG)
+│   ├── train_v4/      # 500 synthetic
+│   └── val_honest/    # 10 реальных non-donor
 ├── labels/
-│   ├── test/        # 49 YOLO-разметок (.txt)
-│   └── train/       # 500 синтетических разметок
-└── gost_stamp.yaml  # YOLO dataset config
+│   ├── test/          # 49 YOLO-разметок
+│   └── train_v4/      # 500 синтетических разметок
+└── gost_stamp.yaml    # YOLO dataset config → train_v4, val_honest
 ```
 
 **EDA (exp01_eda_baseline.ipynb):**
 - Размеры штампов: ширина 345–5652 px, высота 102–1254 px
 - Aspect ratio: ~3.55:1 (среднее), std 0.41
-- PPI: от 200 до 400 DPI (определено через метаданные + ISO 216)
+- PPI: от 200 до 400 DPI (ISO 216 + метаданные)
 - Физическая площадь штампа: сконцентрирована вокруг 10175 мм² (185×55 мм ГОСТ)
-- 49 изображений, 1 класс (stamp)
 
-**Синтетические данные (exp02_synthetic_data.ipynb):**
-- GOST-метод: рисует штамп по ГОСТ 185×55 мм с сеткой, текстовыми полями
-- Copy-paste: вырезает реальные штампы и накладывает на случайные участки чертежей
-
-**Целостность данных (data leakage prevention):**
-Copy-paste штампы вырезаются **только из 4 изображений-доноров**, отобранных стратифицированно по PPI, Laplacian-var и относительной площади ROI. Остальные 45 изображений модель видит впервые при валидации. Donor-лист: `data/donors.txt`.
+**Целостность данных:**
+Copy-paste штампы вырезаются **только из 4 изображений-доноров**, отобранных стратифицированно. v1–v3 невоспроизводимы вне Colab (см. `data/LEAKAGE.md`). v4 полностью воспроизводима.
 
 ---
 
@@ -69,35 +70,40 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 3. Union box из дочерних контуров
 4. Фильтрация по aspect ratio (3.55 ± 25%)
 
-**Результат (v3, 35 non-donor, non-val):** detection rate ~86%, IoU mean ~0.633, F1 ~0.738
+**Результат (v4, 35 non-donor, non-val, без position map):** IoU mean = 0.530, Precision = 0.786, Recall = 0.657, F1 = 0.719
 
 ### 4.2. YOLOv8n (одностадийный CNN)
 - Модель: yolov8n (pretrained on COCO)
-- Данные: 500 synthetic train / 49 real val (eval на 45 non-donor)
-- Параметры: 50 epochs, imgsz=640, batch=16, device=cpu, seed=42 (воспроизводимо)
-- Аугментации: стандартные из ultralytics (mosaic=0.0, flip, rotation)
+- Данные: 500 synthetic train (v4) / 10 real val (`val_honest/`) / 35 real test
+- Параметры: 50 epochs, imgsz=640, batch=16, device=cpu, seed=42
+- Аугментации: ultralytics default (mosaic=0.0, flip, rotation)
 - Время обучения: ~144 мин (CPU) / ~5 мин (T4 GPU)
 
-**Результат (v3, 35 non-donor, non-val):** IoU mean = 0.700, Precision = 1.0, Recall = 0.778, F1 = 0.875, Detection rate = 77.8%
+**Результат (v4, 35 non-donor, non-val, top-1 confidence):** IoU mean = 0.502, Precision = 0.833, Recall = 0.571, F1 = 0.678, Detection rate = 57.1%
 
-> **История утечек:** Первая версия (v1) показывала IoU 0.880 за счёт утечки тестовых фонов в copy-paste. После исправления фонов (v2) — IoU 0.765. Чистый baseline (v3) — IoU 0.700. Подробнее: [data/LEAKAGE.md](data/LEAKAGE.md).
+> **История утечек:** v1 (утечка фона) → IoU 0.880; v2 (фоны исправлены) → IoU 0.765; v3 (чистый baseline, невоспроизводим) → IoU 0.700, F1 0.875; v4 (сложная смесь, честный) → IoU 0.502, F1 0.678. Подробнее: [data/LEAKAGE.md](data/LEAKAGE.md).
+>
+> **Важно:** Precision=1.0 в v3 — не признак качества детекции, а артефакт shortcut'а:
+> модель выучила, что штамп всегда на белом фоне с сеткой (GOST) или на unlabeled
+> фоне (copy-paste), и никогда не выдаёт false positive на других фонах.
 
 ### 4.3. Faster R-CNN (двухстадийный CNN)
-- Модель: ResNet50 FPN backbone (pretrained на COCO, `weights="DEFAULT"`)
-- Данные: те же 500 synthetic train / 49 real val (eval на 45 non-donor)
-- Параметры: 30 epochs, batch=4 (effective 8 с gradient accumulation), Adam с дифференциальным LR (backbone 1e-4, head 1e-3), imgsz=800, gradient clipping max_norm=1.0
-- Early stopping с patience=5
-- **Исправления:** `src/models/rcnn_model.py` — починена распаковка DataLoader, добавлен метод evaluate(), предобученные веса вместо инициализации с нуля, Adam вместо SGD, resize в predict()
-
-**Результат (v2, 45 non-donor):** IoU mean = 0.731, Precision = 0.949, Recall = 0.822, F1 = 0.881, Detection rate = 86.7%
+- Модель: ResNet50 FPN backbone (pretrained on COCO)
+- Данные: 500 synthetic train / 49 real val
+- Параметры: 30 epochs, batch=4 (effective 8), Adam (backbone 1e-4, head 1e-3), imgsz=800, gradient clipping, early stopping
+- **Результат (v2, 45 non-donor):** IoU mean = 0.731, F1 = 0.881 (на v2 — не сопоставим с v4)
+- **RCNN v4 eval:** ❌ Ожидает (checkpoint: `artifacts/models/rcnn_v4_best.pth`)
 
 ### 4.4. Hybrid (CNN + CV Refine)
-- Лучшая CNN → CV-уточнение:
-  - Aspect ratio проверка
-  - Edge density оценка
-  - Выбор лучшего кандидата по композитному скору
+- YOLO v4 → CV уточнение с fused scoring:
+  - Fused score = `(cnn_weight × CNN_conf) + ((1 − cnn_weight) × CV_score)`
+  - cnn_weight = 0.6 (подобран sweep-ом 0.0–1.0)
+  - CV_score = f(aspect_ratio, edge_density)
+- Не требует переобучения — пост-процессинг на стороне CV
 
-**Результат:** (ожидает завершения ноутбука exp06) — pending
+**Результат (v4, 35 non-donor, non-val):** IoU mean = 0.527, Precision = 0.875, Recall = 0.600, F1 = 0.712 (+0.034 к YOLO v4)
+
+**Гибрид на v3:** F1 = 0.757 (−0.100) — подтверждает "white canvas shortcut": уточнение не помогает, когда CNN уже идеально точен за счёт shortcut'а.
 
 ---
 
@@ -110,29 +116,31 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 
 ### Результаты
 
-| Модель | Версия | Выборка | IoU mean | Precision | Recall | F1 | Det. rate |
-|--------|--------|---------|----------|-----------|--------|-----|-----------|
-| CV Baseline | v3 (обновлён) | 35 real (non-val, non-donor) | 0.633 | 0.800 | 0.686 | 0.738 | 85.7% |
-| YOLOv8n | v3 (clean) | 35 real (non-val, non-donor) | 0.700 | **1.000** | 0.778 | 0.875 | 77.8% |
-| Faster R-CNN | v2* | 45 real (non-donor) | **0.731** | 0.949 | **0.822** | **0.881** | **86.7%** |
-| Hybrid (YOLO+CV) | — | — | — | — | — | — | — |
+**Сводная таблица (все модели на едином тесте — 35 real non-donor, non-val v4):**
 
-> **\*** Faster R-CNN v2 оценён на 45 изображениях (включает 10 val, не исключённых из теста) — не полностью сопоставим со строками v3.
->
-> **История утечек (YOLO):** v1 (утечка фона) — IoU 0.880 → v2 (фоны исправлены) — IoU 0.765 → v3 (чистый baseline) — IoU 0.700. Подробнее: [data/LEAKAGE.md](data/LEAKAGE.md).
+| Модель | Версия | IoU mean | Precision | Recall | F1 | Det. rate |
+|--------|--------|----------|-----------|--------|-----|-----------|
+| CV Baseline (без pos map) | v4 | 0.530 | 0.786 | 0.657 | 0.719 | 80.0% |
+| YOLOv8n (top-1) | v4 | 0.502 | 0.833 | 0.571 | 0.678 | 57.1% |
+| **Hybrid v4** (YOLO+CV) | v4 | **0.527** | **0.875** | 0.600 | **0.712** | — |
+| YOLOv8n (top-1) | v3* | 0.700 | 1.000 | 0.778 | 0.875 | 77.8% |
+| Faster R-CNN | v2*† | 0.731 | 0.949 | 0.822 | 0.881 | 86.7% |
+
+> \* v3/v2 невоспроизводимы — см. [data/LEAKAGE.md](data/LEAKAGE.md)
+> † RCNN v2 оценён на 45 изображениях (включает 10 val)
 
 ### Выбор финальной модели
 
-YOLOv8n v3 и Faster R-CNN v2 показывают близкие результаты на своих тестовых выборках:
+**Финальный выбор: CV Baseline без position map (F1 = 0.719)**
 
-- **YOLOv8n v3** (35 real): IoU 0.700, Precision 1.0, F1 0.875 — идеальная точность, но recall 0.778 (22% пропусков)
-- **Faster R-CNN v2** (45 real): IoU 0.731, F1 0.881 — немного выше по всем метрикам, но оценён на 45 изображениях (включая 10 val)
+Обоснование:
+1. **Честные метрики:** v4 — единственная полностью воспроизводимая версия данных
+2. **YOLO v4 (F1 = 0.678)** уступает CV baseline по F1 и detection rate
+3. **Hybrid v4 (F1 = 0.712)** всё ещё ниже чистого CV baseline
+4. **v3-модели (YOLO F1 = 0.875, RCNN F1 = 0.881)** невоспроизводимы — их метрики недостижимы в текущем окружении
+5. **CV без обучения** — не требует GPU, данных, и даёт лучший F1 среди воспроизводимых подходов
 
-Учитывая:
-1. Оценка на разных выборках (35 vs 45) — прямое сравнение некорректно
-2. Гибрид (YOLO+CV) потенциально может повысить recall YOLO за счёт CV-уточнения
-
-**Финальный выбор отложен до запуска exp06 (Hybrid) и exp07 (единое сравнение на 35 изображениях).**
+Гибрид v4 описан как **улучшение YOLO v4** (+0.034 F1), но не превосходит CV baseline.
 
 ---
 
@@ -184,7 +192,7 @@ YOLOv8n v3 и Faster R-CNN v2 показывают близкие результ
 1. **Подготовка:**
    ```bash
    cd project
-   cp artifacts/yolo/exp01/weights/best.pt artifacts/models/best.pt
+   # Сервис использует artifacts/yolo/exp04_v4/weights/best.pt по умолчанию
    ```
 
 2. **Запуск сервиса:**
@@ -199,13 +207,15 @@ YOLOv8n v3 и Faster R-CNN v2 показывают близкие результ
    - Показать Swagger UI с результатом
 
 4. **Эксперименты:**
-   - Показать ноутбуки (exp01–exp05) с результатами
-   - Объяснить разницу подходов: YOLO (0.700 IoU) vs CV baseline (0.633 IoU)
-   - Обязательно упомянуть историю утечек данных (v1→v2→v3) и почему финальные метрики ниже первоначальных
+   - Показать ноутбуки (exp01–exp06) с результатами
+   - EDA: анализ PPI, размеров штампов, отбор доноров
+   - Эволюция данных: v1 (утечка) → v3 (чистый, невоспроизводим) → v4 (честный, воспроизводим)
+   - Гибрид v4: +0.034 F1 над YOLO v4, но CV baseline остаётся лучшей воспроизводимой моделью (F1 = 0.719)
 
 5. **На что обратить внимание:**
-   - YOLO v3: IoU 0.700, Precision 1.0, Recall 0.778 — идеальная точность, 78% recall
-   - CV baseline v3: IoU 0.633, Detection rate 86% — больше находок, но с ложными срабатываниями
-   - Модульная структура `src/`
-   - Рабочий FastAPI сервис с реальной моделью
-   - Data leakage prevention (4 донора excluded from eval, штампы используются только для copy-paste)
+   - **Честные метрики:** YOLO v4 F1 = 0.678 vs CV Baseline F1 = 0.719 — CV побеждает
+   - **История утечек:** почему метрики упали с 1.0 → 0.678 (академическая честность)
+   - **Гибрид:** работающий fused scoring (cnn_weight = 0.6), +0.034 к YOLO v4
+   - **Невоспроизводимость v1–v3:** зафиксировано в LEAKAGE.md
+   - **Модульная структура src/** с оценкой всех моделей
+   - **Рабочий FastAPI сервис** с реальной моделью

@@ -6,16 +6,16 @@
 
 ## Файлы
 
-### `config.yaml` — основной конфиг (50 строк)
+### `config.yaml` — основной конфиг
 
 Секции:
 - `paths` — пути к данным, артефактам, синтетике
 - `cv_baseline` — параметры CV-детектора (aspect ratio, adaptive threshold)
 - `yolo` — параметры YOLO (model_name, epochs, imgsz, batch, device)
 - `rcnn` — параметры Faster R-CNN (epochs, batch_size, lr, imgsz)
-- `hybrid` — параметры гибридного уточнения (IoU threshold, AR tolerance)
+- `hybrid` — параметры гибридного уточнения (cnn_weight, IoU threshold, AR tolerance)
 - `synthetic` — параметры генерации синтетики (donor_count, num_gost, num_copypaste)
-- `evaluation` — пороги IoU для расчёта метрик (0.3, 0.5, 0.75)
+- `evaluation` — пороги IoU + путь к весам YOLO для оценки
 - `model.classes` — список классов (только `stamp`)
 
 ### `.env.example` — шаблон переменных окружения
