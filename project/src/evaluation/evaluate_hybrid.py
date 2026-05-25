@@ -44,12 +44,14 @@ def evaluate_hybrid(
 
         preds = yolo_model(img, conf=conf, verbose=False)
         raw_bboxes = []
+        raw_confs = []
         if preds[0].boxes:
             for box in preds[0].boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                 raw_bboxes.append((x1, y1, x2 - x1, y2 - y1))
+                raw_confs.append(float(box.conf[0]))
 
-        pred_bbox = refiner.refine(raw_bboxes, img)
+        pred_bbox = refiner.refine(raw_bboxes, raw_confs, img)
 
         iou = bbox_iou(pred_bbox, gt_bbox) if pred_bbox is not None and gt_bbox is not None else 0.0
         results.append(DetectionResult(

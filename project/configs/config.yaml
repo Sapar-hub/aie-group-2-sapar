@@ -46,6 +46,7 @@ rcnn:
   imgsz: 640
 
 hybrid:
+  cnn_weight: 0.6
   iou_threshold: 0.3
   ar_refine_tolerance: 0.15
 

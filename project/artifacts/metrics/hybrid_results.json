@@ -1,0 +1,37 @@
+{
+  "cv_baseline": {
+    "iou_mean": 0.612,
+    "precision": 0.793,
+    "recall": 0.657,
+    "f1": 0.719,
+    "detection_rate": 0.829
+  },
+  "yolo_v3_top1": {
+    "iou_mean": 0.692,
+    "precision": 0.964,
+    "recall": 0.771,
+    "f1": 0.857,
+    "detection_rate": 0.8
+  },
+  "hybrid_v3": {
+    "iou_mean": 0.692,
+    "precision": 0.964,
+    "recall": 0.771,
+    "f1": 0.857,
+    "detection_rate": 0.8
+  },
+  "yolo_v4_top1": {
+    "iou_mean": 0.502,
+    "precision": 0.833,
+    "recall": 0.571,
+    "f1": 0.678,
+    "detection_rate": 0.686
+  },
+  "hybrid_v4": {
+    "iou_mean": 0.527,
+    "precision": 0.875,
+    "recall": 0.6,
+    "f1": 0.712,
+    "detection_rate": 0.686
+  }
+}

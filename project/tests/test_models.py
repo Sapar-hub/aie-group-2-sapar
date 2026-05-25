@@ -77,6 +77,6 @@ class TestHybridRefiner:
         from hybrid.refiner import HybridRefiner
         blank = np.ones((800, 600, 3), dtype=np.uint8) * 255
         refiner = HybridRefiner()
-        result = refiner.refine([], blank)
+        result = refiner.refine([], [], blank)
         assert result is None
 

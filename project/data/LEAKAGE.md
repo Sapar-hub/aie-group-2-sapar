@@ -108,7 +108,20 @@ The real test set (45 non-donor images) provides the only unbiased signal.
 - Analysis: GOST images start on a blank white canvas with light gray doodles — nothing like real yellowed, creased blueprints. The model shortcuts on "white grid background = stamp".
 - Fix: Reduced GOST from 250→50 (fewer easy samples), added 200 GOST-on-real-background (stamp grid on real unlabeled backgrounds) to force learning grids on realistic textures. Copy-paste kept at 250.
 
-**Result files:** `artifacts/metrics/yolo_v4_results.json` (pending)
+**Result files:** `artifacts/metrics/yolo_v4_results.json` ✅
+
+---
+
+### Hybrid (v4 + CV refinement)
+
+The refiner fuses YOLOv8n confidence scores with CV features (aspect ratio, edge density)
+at `cnn_weight=0.6` (config `hybrid.cnn_weight`). Improves YOLO v4 top-1 confidence F1
+from **0.678 → 0.712** (+0.034).
+
+Hybrid does **not** improve v3 (F1 unchanged at 0.857) — the v3 model already achieves
+Precision=0.964 via the "white canvas shortcut"; CV refinement has nothing to add.
+
+**Result files:** `artifacts/metrics/hybrid_results.json`
 
 ---
 
