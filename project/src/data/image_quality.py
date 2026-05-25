@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 
 from data.loader import load_image_and_labels
+from evaluation.metrics import yolo_to_pixel
 
 logger = logging.getLogger(__name__)
 
@@ -198,16 +199,6 @@ def compute_laplacian_variance(image: np.ndarray, bbox_abs: Tuple[int, int, int,
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
 
-def yolo_to_abs_bbox(label: np.ndarray, img_w: int, img_h: int) -> Tuple[int, int, int, int]:
-    """Convert YOLO label [class, cx, cy, bw, bh] to (x, y, w, h)."""
-    _, cx, cy, bw, bh = label
-    x = int((cx - bw / 2) * img_w)
-    y = int((cy - bh / 2) * img_h)
-    w = int(bw * img_w)
-    h = int(bh * img_h)
-    return (x, y, w, h)
-
-
 def _quantize_equal_width(values: List[float], n_bins: int = 2) -> List[int]:
     """Equal-width binning. Handles None by placing in bin 0."""
     bins = [0] * len(values)
@@ -329,7 +320,7 @@ def select_donors(
         ppi_result = get_ppi(str(img_path))
         ppi = ppi_result.ppi
 
-        bbox_abs = yolo_to_abs_bbox(labels[0], w, h)
+        bbox_abs = yolo_to_pixel(tuple(labels[0]), w, h)
         laplacian = compute_laplacian_variance(img, bbox_abs)
         roi_rel_area = (bbox_abs[2] * bbox_abs[3]) / float(w * h)
 
