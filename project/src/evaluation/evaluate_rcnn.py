@@ -64,7 +64,7 @@ def run_rcnn_evaluation(
     from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
 
     cfg = load_config(config_path)
-    model = RCNNModel()
+    model = RCNNModel.from_config(cfg)
     model.load(weights_path)
 
     donors = load_donors(cfg)

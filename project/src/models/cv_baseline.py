@@ -47,6 +47,22 @@ class CVBaselineDetector:
         self.roi_width_ratio = roi_width_ratio
         self.roi_height_ratio = roi_height_ratio
 
+    @classmethod
+    def from_config(cls, cfg: dict):
+        cv_cfg = cfg.get("cv_baseline", {})
+        return cls(
+            expected_ar=cv_cfg.get("expected_aspect_ratio", FORM_3_ASPECT_RATIO),
+            ar_tolerance=cv_cfg.get("ar_tolerance", 0.15),
+            min_width=cv_cfg.get("min_width_px", 300),
+            min_height=cv_cfg.get("min_height_px", 80),
+            min_area=cv_cfg.get("min_area_px", 15000),
+            max_width=cv_cfg.get("max_width_px", 5000),
+            block_size=cv_cfg.get("block_size", 11),
+            adaptive_c=cv_cfg.get("adaptive_threshold_c", 5),
+            roi_width_ratio=cv_cfg.get("roi_width_ratio", 0.5),
+            roi_height_ratio=cv_cfg.get("roi_height_ratio", 0.5),
+        )
+
     @staticmethod
     def _detect_form_type(image_path: Optional[str]) -> float:
         if not image_path:

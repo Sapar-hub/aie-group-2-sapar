@@ -17,6 +17,16 @@ class HybridRefiner:
         self.ar_refine_tol = ar_refine_tol
         self.iou_threshold = iou_threshold
 
+    @classmethod
+    def from_config(cls, cfg: dict):
+        hybrid_cfg = cfg.get("hybrid", {})
+        cv_cfg = cfg.get("cv_baseline", {})
+        return cls(
+            expected_ar=hybrid_cfg.get("expected_ar", 3.36),
+            ar_refine_tol=hybrid_cfg.get("ar_refine_tolerance", 0.15),
+            iou_threshold=hybrid_cfg.get("iou_threshold", 0.3),
+        )
+
     def refine(
         self,
         cnn_bboxes: List[Tuple[int, int, int, int]],

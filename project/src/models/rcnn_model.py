@@ -22,6 +22,14 @@ class RCNNModel:
         self.device = torch.device(device)
         self.model = None
 
+    @classmethod
+    def from_config(cls, cfg: dict, num_classes: int = 2):
+        rcnn_cfg = cfg.get("rcnn", {})
+        return cls(
+            num_classes=num_classes,
+            device=rcnn_cfg.get("device", "cpu"),
+        )
+
     def build(self, weights="DEFAULT"):
         logger.info("Building Faster R-CNN model...")
         self.model = fasterrcnn_resnet50_fpn(weights=weights)

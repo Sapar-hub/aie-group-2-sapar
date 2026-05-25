@@ -74,7 +74,7 @@ def run_hybrid_evaluation(
 
     cfg = load_config(config_path)
     yolo_model = YOLO(str(yolo_weights))
-    refiner = HybridRefiner()
+    refiner = HybridRefiner.from_config(cfg)
 
     donors = load_donors(cfg)
     val_honest = load_val_honest(cfg)

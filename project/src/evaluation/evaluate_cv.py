@@ -59,7 +59,7 @@ def run_cv_evaluation(config_path: Optional[str] = None) -> dict:
     from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
 
     cfg = load_config(config_path)
-    detector = CVBaselineDetector()
+    detector = CVBaselineDetector.from_config(cfg)
 
     donors = load_donors(cfg)
     val_honest = load_val_honest(cfg)
