@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class HybridRefiner:
     def __init__(
         self,
-        expected_ar: float = 3.55,
+        expected_ar: float = 3.36,
         ar_refine_tol: float = 0.15,
         iou_threshold: float = 0.3,
     ):

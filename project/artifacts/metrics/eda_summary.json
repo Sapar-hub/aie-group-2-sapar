@@ -1,15 +1,18 @@
 {
   "n_images": 49,
-  "n_images_with_ppi_metadata": 27,
+  "n_images_with_ppi_metadata": 49,
   "ppi_method_counts": {
-    "metadata": 23,
-    "no_ppi_available": 22,
-    "iso_inference_mismatch": 2,
-    "iso_inference": 2
+    "iso_inference": 26,
+    "iso_override_contradiction": 14,
+    "metadata": 9
   },
   "paper_sizes": {
-    "A1": 2,
-    "A0": 2
+    "A3": 20,
+    "A0": 9,
+    "A4": 9,
+    "A2": 4,
+    "A1": 4,
+    "A5": 1
   },
   "resolution": {
     "width_mean": 5244.3,
@@ -34,10 +37,10 @@
   },
   "donors": {
     "filenames": [
-      "test_09.jpg",
-      "test_14.png",
-      "test_34.jpg",
-      "test_49.jpg"
+      "test_11.png",
+      "test_17.png",
+      "test_23.png",
+      "test_42.png"
     ],
     "n_clean_validation": 45,
     "data_integrity": "only donors used as stamp sources; remaining images never cropped"
@@ -45,9 +48,9 @@
   "physical_stamp_area_mm2": {
     "n_with_ppi": 49,
     "gost_expected": 10175.0,
-    "mean": 34218.0,
-    "std": 50676.9,
-    "min": 2562.7,
-    "max": 180709.0
+    "mean": 15217.7,
+    "std": 18503.4,
+    "min": 1253.4,
+    "max": 66102.1
   }
 }

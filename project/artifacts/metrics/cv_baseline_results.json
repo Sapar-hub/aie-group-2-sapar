@@ -1,0 +1,14 @@
+{
+  "model": "CV Baseline (updated)",
+  "data": "35 real non-donor, non-val images (same subset as YOLO v3)",
+  "iou_mean": 0.633,
+  "iou_std": 0.43,
+  "iou_median": 0.926,
+  "iou_at_05": 0.686,
+  "precision": 0.8,
+  "recall": 0.686,
+  "f1": 0.738,
+  "detection_rate": 0.857,
+  "n_found": 30,
+  "n_images": 35
+}

@@ -12,8 +12,8 @@ class TestCVBaseline:
     def test_detector_init(self):
         from models.cv_baseline import CVBaselineDetector
         detector = CVBaselineDetector()
-        assert detector.expected_ar == 3.55
-        assert detector.min_width == 100
+        assert detector.expected_ar == pytest.approx(3.36, abs=0.01)
+        assert detector.min_width == 300
 
 
 class TestRCNNModel:
@@ -71,7 +71,7 @@ class TestHybridRefiner:
     def test_refiner_init(self):
         from hybrid.refiner import HybridRefiner
         refiner = HybridRefiner()
-        assert refiner.expected_ar == 3.55
+        assert refiner.expected_ar == pytest.approx(3.36, abs=0.01)
 
     def test_refine_empty(self):
         from hybrid.refiner import HybridRefiner
