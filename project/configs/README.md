@@ -12,7 +12,7 @@
 - `paths` — пути к данным, артефактам, синтетике
 - `cv_baseline` — параметры CV-детектора (aspect ratio, adaptive threshold)
 - `yolo` — параметры YOLO (model_name, epochs, imgsz, batch, device)
-- `rcnn` — параметры Faster R-CNN (epochs, batch_size, lr, imgsz)
+- `rcnn` — параметры Faster R-CNN (epochs, batch_size, lr, imgsz, device, patience, target_ppi, synth_dpi, max_size)
 - `hybrid` — параметры гибридного уточнения (cnn_weight, IoU threshold, AR tolerance)
 - `synthetic` — параметры генерации синтетики (donor_count, num_gost, num_copypaste)
 - `evaluation` — пороги IoU + путь к весам YOLO для оценки

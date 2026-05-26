@@ -14,7 +14,6 @@
 | 2 | **YOLOv8n** | Одностадийный CNN | 500 синтетических (v4) |
 | 3 | **Faster R-CNN** | Двухстадийный CNN | 500 синтетических (v4) |
 | 4 | **Hybrid** (YOLO + CV уточнение, fused scoring) | Комбинированный | YOLO v4 + CV refiner |
-| 5 | **DETR** | Трансформер | — (stretch goal, не реализован) |
 
 ---
 
@@ -31,8 +30,7 @@
 ## Статус реализации
 
 ### Фаза 1: Пайплайн данных
-- [x] `src/data/loader.py` — загрузка изображений + YOLO-разметок
-- [x] `src/data/augment.py` — аугментации
+- [x] `src/data/loader.py` — загрузка изображений + YOLO-разметок + GOSTDataset (torchvision)
 - [x] `src/data/synthetic.py` — генерация синтетики (GOST + copy-paste)
 - [x] `src/data/image_quality.py` — PPI detection + Laplacian variance + donor selection
 - [x] `scripts/generate_synthetic.py` — CLI, авто-выбор доноров
@@ -44,7 +42,7 @@
 - [x] `notebooks/exp03_cv_baseline.ipynb` — результаты, param sweep
 
 ### Фаза 3: YOLO
-- [x] `src/models/yolo_model.py` — train/inference wrapper
+- [x] `src/models/train_yolo.py` — функция train_yolo() через ultralytics
 - [x] `notebooks/exp04_yolo_experiments.ipynb` — обучение, метрики
 
 ### Фаза 4: Faster R-CNN
@@ -52,14 +50,11 @@
 - [x] `notebooks/exp05_faster_rcnn.ipynb` — обучение, результаты
 - [x] `artifacts/metrics/rcnn_v4_results.json` — RCNN v4 на 35 real (F1=0.627)
 
-### Фаза 5: DETR (stretch goal)
-- [ ] `src/models/detr_model.py` — не реализован
-
-### Фаза 6: Hybrid
+### Фаза 5: Hybrid
 - [x] `src/hybrid/refiner.py` — fused scoring (CNN conf + CV score)
 - [x] `notebooks/exp06_hybrid.ipynb` — код + выходные ячейки (v3+v4)
 
-### Фаза 7: Сравнение
+### Фаза 6: Сравнение
 - [x] `src/evaluation/metrics.py` — метрики
 - [x] `src/evaluation/comparison.py` — сводное сравнение
 - [x] `src/evaluation/evaluate_yolo.py` — оценка YOLO
@@ -68,12 +63,14 @@
 - [x] `artifacts/metrics/hybrid_results.json` — 6 строк сравнения (CV + YOLO v3/v4 + Hybrid v3/v4 + RCNN v4)
 - [ ] `notebooks/exp07_comparison.ipynb` — код есть, выходные ячейки отсутствуют
 
-### Фаза 8: API сервис
+### Фаза 7: API сервис
 - [x] `src/api/main.py` — FastAPI (/health, /predict)
 - [x] `src/api/schemas.py` — Pydantic схемы
 - [ ] `src/api/router.py` — заглушка, требует доработки или удаления
 
-### Фаза 9: Инфраструктура
+### Фаза 8: Артефакты и инфраструктура
+- [x] Реструктуризация `artifacts/`: yolo/v4 (current), yolo/legacy/v3/v2/v1, rcnn/v4, models/ → symlink'и
+- [x] `src/api/main.py` — упрощён `_find_yolo_weights()` (чистый поиск по `models/best.pt` через symlink)
 - [x] `configs/config.yaml` — все параметры
 - [x] `configs/.env.example` — шаблон секретов
 - [x] `requirements.txt` — зависимости
@@ -82,7 +79,7 @@
 - [x] `tests/test_models.py` — 6 тестов моделей
 - [ ] `tests/test_pipeline.py` — end-to-end проверки
 
-### Фаза 10: Документация
+### Фаза 9: Документация
 - [x] `README.md` — основной README (обновлён)
 - [x] `report.md` — отчёт (заполнен частично)
 - [x] `self-checklist.md` — самопроверка (обновлена)

@@ -12,7 +12,7 @@ class HybridRefiner:
         expected_ar: float = 3.36,
         ar_refine_tol: float = 0.15,
         iou_threshold: float = 0.3,
-        cnn_weight: float = 0.5,
+        cnn_weight: float = 0.6,
     ):
         self.expected_ar = expected_ar
         self.ar_refine_tol = ar_refine_tol

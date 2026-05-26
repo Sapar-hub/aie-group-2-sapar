@@ -42,7 +42,9 @@ yolo:
 rcnn:
   num_epochs: 30
   batch_size: 4
+  accum_steps: 2
   learning_rate: 0.001
+  lr_backbone: 0.0001
   imgsz: 640
   device: cpu
   patience: 5
@@ -58,13 +60,14 @@ hybrid:
 synthetic:
   donor_count: 4
   donor_random_state: 42
+  random_state: 42
   num_total: 500
   num_gost: 50
   num_copypaste: 250
   # num_gost_on_bg = num_total - num_gost - num_copypaste = 200
 
 evaluation:
-  yolo_weights: artifacts/yolo/exp04_v4/weights/best.pt
+  yolo_weights: artifacts/models/best.pt
   iou_thresholds:
     - 0.3
     - 0.5
