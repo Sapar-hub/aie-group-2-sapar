@@ -1,0 +1,17 @@
+{
+  "model": "Faster R-CNN (ResNet50 FPN)",
+  "optimizer": "Adam",
+  "lr_backbone": 0.0001,
+  "lr_head": 0.001,
+  "data": "500 synthetic v4 (50 GOST + 250 copy-paste + 200 GOST-on-real-bg) + 49 real test (eval on 35 non-donor, non-val)",
+  "best_epoch": 30,
+  "epochs": 30,
+  "train_time_min": 1167.8,
+  "best_conf": 0.1,
+  "iou_mean": 0.396,
+  "iou_std": 0.433,
+  "precision": 1.0,
+  "recall": 0.457,
+  "f1": 0.627,
+  "detection_rate": 0.457
+}
