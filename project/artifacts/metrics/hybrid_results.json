@@ -33,5 +33,12 @@
     "recall": 0.6,
     "f1": 0.712,
     "detection_rate": 0.686
+  },
+  "rcnn_v4": {
+    "iou_mean": 0.396,
+    "precision": 1.0,
+    "recall": 0.457,
+    "f1": 0.627,
+    "detection_rate": 0.457
   }
 }

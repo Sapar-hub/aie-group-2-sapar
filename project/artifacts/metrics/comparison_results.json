@@ -1,0 +1,55 @@
+{
+  "best_v4_model": "CV Baseline (\u0431\u0435\u0437 pos map)",
+  "best_v4_f1": 0.719,
+  "best_v4_iou": 0.612,
+  "all_models": [
+    {
+      "iou_mean": 0.612,
+      "precision": 0.793,
+      "recall": 0.657,
+      "f1": 0.719,
+      "detection_rate": 0.829,
+      "Model": "CV Baseline (\u0431\u0435\u0437 pos map)"
+    },
+    {
+      "iou_mean": 0.502,
+      "precision": 0.833,
+      "recall": 0.571,
+      "f1": 0.678,
+      "detection_rate": 0.686,
+      "Model": "YOLOv8n v4 (top-1)"
+    },
+    {
+      "iou_mean": 0.527,
+      "precision": 0.875,
+      "recall": 0.6,
+      "f1": 0.712,
+      "detection_rate": 0.686,
+      "Model": "Hybrid v4 (YOLO+CV)"
+    },
+    {
+      "iou_mean": 0.396,
+      "precision": 1.0,
+      "recall": 0.457,
+      "f1": 0.627,
+      "detection_rate": 0.457,
+      "Model": "Faster R-CNN v4"
+    },
+    {
+      "iou_mean": 0.692,
+      "precision": 0.964,
+      "recall": 0.771,
+      "f1": 0.857,
+      "detection_rate": 0.8,
+      "Model": "YOLOv8n v3 (\u043d\u0435\u0432\u043e\u0441\u043f\u0440.)"
+    },
+    {
+      "iou_mean": 0.692,
+      "precision": 0.964,
+      "recall": 0.771,
+      "f1": 0.857,
+      "detection_rate": 0.8,
+      "Model": "Hybrid v3 (\u043d\u0435\u0432\u043e\u0441\u043f\u0440.)"
+    }
+  ]
+}

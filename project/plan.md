@@ -50,6 +50,7 @@
 ### Фаза 4: Faster R-CNN
 - [x] `src/models/rcnn_model.py` — train/inference wrapper
 - [x] `notebooks/exp05_faster_rcnn.ipynb` — обучение, результаты
+- [x] `artifacts/metrics/rcnn_v4_results.json` — RCNN v4 на 35 real (F1=0.627)
 
 ### Фаза 5: DETR (stretch goal)
 - [ ] `src/models/detr_model.py` — не реализован
@@ -64,7 +65,7 @@
 - [x] `src/evaluation/evaluate_yolo.py` — оценка YOLO
 - [x] `src/evaluation/evaluate_cv.py` — оценка CV
 - [x] `src/evaluation/evaluate_hybrid.py` — оценка гибрида
-- [x] `artifacts/metrics/hybrid_results.json` — 5 строк сравнения
+- [x] `artifacts/metrics/hybrid_results.json` — 6 строк сравнения (CV + YOLO v3/v4 + Hybrid v3/v4 + RCNN v4)
 - [ ] `notebooks/exp07_comparison.ipynb` — код есть, выходные ячейки отсутствуют
 
 ### Фаза 8: API сервис
