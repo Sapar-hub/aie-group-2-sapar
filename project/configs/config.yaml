@@ -44,6 +44,11 @@ rcnn:
   batch_size: 4
   learning_rate: 0.001
   imgsz: 640
+  device: cpu
+  patience: 5
+  target_ppi: 100
+  synth_dpi: 200
+  max_size: 800
 
 hybrid:
   cnn_weight: 0.6

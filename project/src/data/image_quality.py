@@ -11,8 +11,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from data.loader import load_image_and_labels
-from evaluation.metrics import yolo_to_pixel
+from .loader import load_image_and_labels
+from ..evaluation.metrics import yolo_to_pixel
 
 logger = logging.getLogger(__name__)
 

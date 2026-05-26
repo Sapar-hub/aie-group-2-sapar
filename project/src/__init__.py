@@ -1,4 +1,4 @@
-from evaluation.metrics import (
+from .evaluation.metrics import (
     bbox_iou,
     yolo_to_pixel,
     pixel_to_yolo,
@@ -7,10 +7,10 @@ from evaluation.metrics import (
     DetectionResult,
 )
 
-from models.cv_baseline import CVBaselineDetector
-from models.rcnn_model import RCNNModel
+from .models.cv_baseline import CVBaselineDetector
+from .models.rcnn_model import RCNNModel
 
-from hybrid.refiner import HybridRefiner
+from .hybrid.refiner import HybridRefiner
 
 __all__ = [
     "CVBaselineDetector",

@@ -1,10 +1,6 @@
 import pytest
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from evaluation.metrics import (
+from src.evaluation.metrics import (
     bbox_iou,
     yolo_to_pixel,
     pixel_to_yolo,

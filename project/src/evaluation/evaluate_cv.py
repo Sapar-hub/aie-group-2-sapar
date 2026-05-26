@@ -7,15 +7,15 @@ from typing import List, Optional, Tuple
 import cv2
 import numpy as np
 
-from evaluation.metrics import (
+from .metrics import (
     DetectionResult,
     bbox_iou,
     compute_metrics,
     print_metrics,
     yolo_to_pixel,
 )
-from models.cv_baseline import CVBaselineDetector
-from data.loader import load_image_and_labels
+from ..models.cv_baseline import CVBaselineDetector
+from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def evaluate_cv(
 
 
 def run_cv_evaluation(config_path: Optional[str] = None) -> dict:
-    from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
+    from ..config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
 
     cfg = load_config(config_path)
     detector = CVBaselineDetector.from_config(cfg)

@@ -10,8 +10,8 @@ from typing import Optional
 
 import numpy as np
 
-from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
-from evaluation.metrics import print_metrics
+from ..config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
+from .metrics import print_metrics
 
 logger = logging.getLogger(__name__)
 

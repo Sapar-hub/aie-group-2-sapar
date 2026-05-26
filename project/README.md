@@ -79,8 +79,8 @@ project/
 │   ├── exp06_hybrid.ipynb
 │   └── exp07_comparison.ipynb
 ├── src/
-│   ├── data/         # loader, augment, synthetic, image_quality
-│   ├── models/       # cv_baseline, yolo_model, rcnn_model
+│   ├── data/         # loader (+ GOSTDataset для torchvision), synthetic, image_quality
+│   ├── models/       # cv_baseline, train_yolo, rcnn_model
 │   ├── evaluation/   # metrics (IoU, precision, recall, F1)
 │   ├── hybrid/       # refiner (CNN → CV refine)
 │   └── api/          # main.py (FastAPI), schemas.py
@@ -93,8 +93,8 @@ project/
 │   ├── metrics/                  # EDA summary, YOLO results
 │   └── yolo/exp04/weights/       # best.pt (6 MB, 50 эпох)
 └── scripts/
-    ├── generate_synthetic.py
-    └── train_all.py
+    ├── generate_synthetic.py      # CLI: генерация синтетического датасета
+    └── train_all.py               # CLI: обучение YOLO + Faster R-CNN
 ```
 
 ---
@@ -126,9 +126,17 @@ pip install -r requirements.txt
 python -m scripts.generate_synthetic
 ```
 
-### 4.4. Обучение моделей (Google Colab)
+### 4.4. Обучение моделей
 
-Все эксперименты запускаются в Google Colab (T4 GPU, Free).
+**Вариант A — CLI (локально, CPU):**
+
+```bash
+python -m scripts.train_all
+```
+
+Обучает YOLO + Faster R-CNN последовательно. R-CNN на CPU может быть медленным (~30 мин на v4, 500 samples). Результаты и веса сохраняются в `artifacts/`.
+
+**Вариант B — Google Colab (GPU, быстрее):**
 
 Последовательность:
 1. Открыть `notebooks/exp04_yolo_experiments.ipynb` в Colab
@@ -211,5 +219,4 @@ pytest tests -v
 ## 7. Ограничения и дальнейшая работа
 
 - Модели обучаются на 49 изображениях + синтетике — данные ограничены
-- DETR не реализован (stretch goal)
 - В дальнейшем: больше данных, сегментация штампов, OCR текста в штампах

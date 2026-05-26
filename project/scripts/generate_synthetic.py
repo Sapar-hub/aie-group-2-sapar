@@ -14,18 +14,15 @@ Usage:
 import argparse
 import logging
 import random
-import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from data.image_quality import select_donors
-from data.loader import load_image_and_labels
-from data.synthetic import (
+from src.data.image_quality import select_donors
+from src.data.loader import load_image_and_labels
+from src.data.synthetic import (
     generate_synthetic_image,
     generate_synthetic_from_real,
     generate_synthetic_image_on_background,

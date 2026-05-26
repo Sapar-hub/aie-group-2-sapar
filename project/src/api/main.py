@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
 
-from api.schemas import HealthResponse, PredictionResponse, BoundingBox
+from .schemas import HealthResponse, PredictionResponse, BoundingBox
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,7 +59,7 @@ def load_model():
 
     if rcnn_path.exists():
         try:
-            from models.rcnn_model import RCNNModel
+            from ..models.rcnn_model import RCNNModel
             logger.info(f"Loading RCNN model from {rcnn_path}")
             model = RCNNModel()
             model.load(rcnn_path)
@@ -70,7 +70,7 @@ def load_model():
             logger.error(f"Failed to load RCNN model: {e}")
 
     logger.warning("No trained model found, using CV baseline")
-    from models.cv_baseline import CVBaselineDetector
+    from ..models.cv_baseline import CVBaselineDetector
     model = CVBaselineDetector()
     model_type = "cv_baseline"
     logger.info("CV baseline model loaded")

@@ -4,13 +4,13 @@ from typing import List, Optional, Tuple
 
 from ultralytics import YOLO
 
-from evaluation.metrics import (
+from .metrics import (
     DetectionResult,
     bbox_iou,
     compute_metrics,
     yolo_to_pixel,
 )
-from data.loader import load_image_and_labels
+from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from evaluation.metrics import (
+from .metrics import (
     bbox_iou,
     yolo_to_pixel,
     pixel_to_yolo,

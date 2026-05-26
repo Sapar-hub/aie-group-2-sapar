@@ -1,1 +1,1 @@
-from hybrid.refiner import HybridRefiner
+from .refiner import HybridRefiner

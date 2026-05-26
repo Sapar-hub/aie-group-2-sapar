@@ -8,15 +8,15 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-from evaluation.metrics import (
+from .metrics import (
     DetectionResult,
     bbox_iou,
     compute_metrics,
     print_metrics,
     yolo_to_pixel,
 )
-from hybrid.refiner import HybridRefiner
-from data.loader import load_image_and_labels
+from ..hybrid.refiner import HybridRefiner
+from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def run_hybrid_evaluation(
     config_path: Optional[str] = None,
     conf: float = 0.1,
 ) -> dict:
-    from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
+    from ..config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
 
     cfg = load_config(config_path)
     yolo_model = YOLO(str(yolo_weights))

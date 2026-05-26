@@ -7,15 +7,15 @@ from typing import List, Optional, Tuple
 import cv2
 import numpy as np
 
-from evaluation.metrics import (
+from .metrics import (
     DetectionResult,
     bbox_iou,
     compute_metrics,
     print_metrics,
     yolo_to_pixel,
 )
-from models.rcnn_model import RCNNModel
-from data.loader import load_image_and_labels
+from ..models.rcnn_model import RCNNModel
+from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def run_rcnn_evaluation(
     config_path: Optional[str] = None,
     conf: float = 0.3,
 ) -> dict:
-    from config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
+    from ..config import load_config, test_image_dir, test_label_dir, load_donors, load_val_honest
 
     cfg = load_config(config_path)
     model = RCNNModel.from_config(cfg)
