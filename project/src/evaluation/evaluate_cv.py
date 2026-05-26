@@ -39,7 +39,7 @@ def evaluate_cv(
         gt_bboxes = [yolo_to_pixel(tuple(label), w, h) for label in labels]
         gt_bbox = gt_bboxes[0] if gt_bboxes else None
 
-        pred_bbox = detector.detect(img, image_path=str(img_path))
+        pred_bbox = detector.detect(img)
 
         iou = bbox_iou(pred_bbox, gt_bbox) if pred_bbox is not None and gt_bbox is not None else 0.0
         results.append(DetectionResult(

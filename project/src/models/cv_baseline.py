@@ -1,25 +1,11 @@
 import cv2
 import numpy as np
-from pathlib import Path
 from typing import Optional, Tuple, List
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 
-# GOST 2.104 form aspect ratios (width_mm / height_mm)
 FORM_3_ASPECT_RATIO = 185 / 55   # ≈ 3.36
-FORM_4_ASPECT_RATIO = 185 / 115  # ≈ 1.61
-FORM_5_ASPECT_RATIO = 297 / 55   # ≈ 5.40
-
-# Per-image stamp position map (derived from manual labeling / benchmark)
-DEFAULT_STAMP_POSITIONS = {
-    **{f"test_{i:02d}": "bottom_right" for i in range(1, 50)},
-    "test_16": "bottom", "test_18": "bottom",
-    "test_21": "bottom", "test_25": "bottom",
-    "test_26": "bottom", "test_27": "bottom", "test_28": "bottom",
-    "test_20": "right", "test_24": "right",
-}
 
 
 class CVBaselineDetector:
@@ -64,21 +50,6 @@ class CVBaselineDetector:
         )
 
     @staticmethod
-    def _detect_form_type(image_path: Optional[str]) -> float:
-        if not image_path:
-            return FORM_3_ASPECT_RATIO
-        m = re.search(r"(FORM_[3-6])", str(image_path), re.IGNORECASE)
-        if m:
-            form = m.group(1).upper()
-            mapping = {
-                "FORM_3": FORM_3_ASPECT_RATIO,
-                "FORM_4": FORM_4_ASPECT_RATIO,
-                "FORM_5": FORM_5_ASPECT_RATIO,
-            }
-            return mapping.get(form, FORM_3_ASPECT_RATIO)
-        return FORM_3_ASPECT_RATIO
-
-    @staticmethod
     def _estimate_dpi(image: np.ndarray) -> int:
         h, w = image.shape[:2]
         # Estimate DPI from A4 (210x297mm) or A3 (297x420mm) aspect ratio
@@ -103,8 +74,6 @@ class CVBaselineDetector:
             x, y, rw, rh = w - half_w, h - half_h, half_w, half_h
         elif roi_type == "bottom":
             x, y, rw, rh = 0, h - half_h, w, half_h
-        elif roi_type == "right":
-            x, y, rw, rh = w - half_w, 0, half_w, h
         else:
             x, y, rw, rh = 0, 0, w, h
 
@@ -342,25 +311,15 @@ class CVBaselineDetector:
         candidates.sort(key=lambda c: (c["conf"], c["bbox"][2] * c["bbox"][3]), reverse=True)
         return candidates
 
-    def detect(self, image: np.ndarray, image_path: Optional[str] = None) -> Optional[Tuple[int, int, int, int]]:
+    def detect(self, image: np.ndarray) -> Optional[Tuple[int, int, int, int]]:
         h, w = image.shape[:2]
 
-        self.expected_ar = self._detect_form_type(image_path)
         dpi = self._estimate_dpi(image)
 
-        # Use per-image stamp position map if available
-        roi_type = None
-        if image_path:
-            stem = Path(image_path).stem
-            roi_type = DEFAULT_STAMP_POSITIONS.get(stem)
-
-        if roi_type is None:
-            if h > w and h / w > 1.3:
-                roi_type = "right"
-            elif h > w:
-                roi_type = "bottom"
-            else:
-                roi_type = "bottom_right"
+        if h > w:
+            roi_type = "bottom"
+        else:
+            roi_type = "bottom_right"
 
         roi, roi_offset = self._extract_roi(image, roi_type)
 

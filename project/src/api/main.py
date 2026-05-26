@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -26,22 +27,34 @@ model_type = None
 def _find_yolo_weights() -> Path:
     env_path = os.environ.get("MODEL_PATH")
     if env_path:
-        p = Path(env_path)
-        if p.exists():
-            return p
-
-    candidates = [
-        Path("artifacts/models/best.pt"),
-        *sorted(Path("artifacts").glob("yolo/*/weights/best.pt")),
-    ]
-    for p in candidates:
-        if p.exists():
-            return p
+        return Path(env_path)
     return Path("artifacts/models/best.pt")
+
+
+def _ensure_cuda_compatible():
+    """Check if CUDA is actually usable on this GPU+PyTorch combo.
+    Fall back to CPU if the GPU is incompatible with the PyTorch build."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c",
+             "import torch; torch.zeros(1, device='cuda')"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode != 0:
+            reason = "unknown CUDA error"
+            for line in result.stderr.splitlines():
+                if "AcceleratorError" in line or "RuntimeError" in line:
+                    reason = line.strip()
+                    break
+            logger.warning("CUDA detected but incompatible (%s). Falling back to CPU.", reason)
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    except Exception as exc:
+        logger.debug("CUDA compatibility check skipped: %s", exc)
 
 
 def load_model():
     global model, model_type
+    _ensure_cuda_compatible()
 
     yolo_path = _find_yolo_weights()
     rcnn_path = Path("artifacts/models/rcnn_best.pth")
@@ -93,9 +106,38 @@ def health():
     )
 
 
+VALID_MODELS = {"auto", "yolo", "cv"}
+
+
+def _predict_yolo(model, image):
+    results = model(image, verbose=False)
+    result = results[0]
+    if result.boxes and len(result.boxes) > 0:
+        box = result.boxes[0]
+        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+        conf = float(box.conf[0])
+        return BoundingBox(x=x1, y=y1, width=x2 - x1, height=y2 - y1), conf
+    return None, None
+
+
+def _predict_cv(detector, image):
+    raw_bbox = detector.detect(image)
+    if raw_bbox is None:
+        return None, None
+    x, y, bw, bh = raw_bbox
+    return BoundingBox(x=x, y=y, width=bw, height=bh), 0.8
+
+
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(file: UploadFile = File(...)):
-    logger.info(f"Received prediction request: {file.filename}")
+async def predict(file: UploadFile = File(...), model_name: str = "auto"):
+    if model_name not in VALID_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model_name '{
+                model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
+        )
+
+    logger.info(f"Received prediction request: {file.filename}, model_name={model_name}")
 
     try:
         contents = await file.read()
@@ -108,42 +150,37 @@ async def predict(file: UploadFile = File(...)):
         h, w = image.shape[:2]
         logger.info(f"Image shape: {w}x{h}")
 
-        if model_type == "yolo":
-            results = model(image, verbose=False)
-            result = results[0]
-            if result.boxes and len(result.boxes) > 0:
-                box = result.boxes[0]
-                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                conf = float(box.conf[0])
-                bbox = BoundingBox(x=x1, y=y1, width=x2 - x1, height=y2 - y1)
-                logger.info(f"YOLO detection: bbox={bbox}, conf={conf:.3f}")
-            else:
-                raise HTTPException(status_code=404, detail="No stamp detected")
-
-        elif model_type == "rcnn":
-            raw_bbox = model.detect(image, conf=0.3)
-            if raw_bbox is None:
-                raise HTTPException(status_code=404, detail="No stamp detected")
-            x, y, bw, bh = raw_bbox
-            bbox = BoundingBox(x=x, y=y, width=bw, height=bh)
-            conf = 0.8
-            logger.info(f"RCNN detection: bbox={bbox}")
-
+        if model_name == "cv":
+            from ..models.cv_baseline import CVBaselineDetector
+            cv_detector = CVBaselineDetector()
+            bbox, conf = _predict_cv(cv_detector, image)
+            used_model = "cv_baseline"
+        elif model_name == "yolo":
+            if model_type != "yolo":
+                raise HTTPException(status_code=400, detail="YOLO model not loaded at startup")
+            bbox, conf = _predict_yolo(model, image)
+            used_model = "yolo"
         else:
-            cv_detector = model
-            raw_bbox = cv_detector.detect(image)
-            if raw_bbox is None:
-                raise HTTPException(status_code=404, detail="No stamp detected")
-            x, y, bw, bh = raw_bbox
-            bbox = BoundingBox(x=x, y=y, width=bw, height=bh)
-            conf = 0.8
-            logger.info(f"CV detection: bbox={bbox}")
+            from ..models.cv_baseline import CVBaselineDetector
+            cv_detector = CVBaselineDetector()
+            bbox, conf = _predict_cv(cv_detector, image)
+            used_model = "cv_baseline"
+
+            if bbox is None and model_type == "yolo":
+                logger.info("CV baseline: no stamp detected, trying YOLO")
+                bbox, conf = _predict_yolo(model, image)
+                used_model = "yolo"
+
+        if bbox is None:
+            raise HTTPException(status_code=404, detail=f"No stamp detected (model: {used_model})")
+
+        logger.info(f"{used_model} detection: bbox={bbox}, conf={conf:.3f}")
 
         return PredictionResponse(
             image_name=file.filename,
             bbox=bbox,
             confidence=conf,
-            model=model_type,
+            model=used_model,
         )
 
     except HTTPException:
