@@ -14,7 +14,7 @@ from src.evaluation.evaluate_rcnn import evaluate_rcnn
 from src.evaluation.evaluate_yolo import evaluate_yolo
 from src.evaluation.metrics import print_metrics
 from src.models.rcnn_model import RCNNModel
-from src.models.train_yolo import train_yolo
+from src.models.train_yolo import train_yolo, set_seeds
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,9 @@ def main():
     logger.info("=" * 60)
 
     rcnn_cfg = cfg.get("rcnn", {})
+    seed = rcnn_cfg.get("seed", 42)
+    deterministic = rcnn_cfg.get("deterministic", True)
+    set_seeds(seed, deterministic)
     rcnn = RCNNModel.from_config(cfg)
     rcnn.build()
 
@@ -78,6 +81,7 @@ def main():
         num_epochs=rcnn_cfg.get("num_epochs", 30),
         lr=rcnn_cfg.get("learning_rate", 0.001),
         patience=rcnn_cfg.get("patience", 5),
+        seed=seed,
     )
 
     artifacts_dir = get_path(cfg, "artifacts")

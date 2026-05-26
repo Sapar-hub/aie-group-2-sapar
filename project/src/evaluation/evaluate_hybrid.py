@@ -15,6 +15,7 @@ from .metrics import (
     print_metrics,
     yolo_to_pixel,
 )
+from . import set_seeds
 from ..hybrid.refiner import HybridRefiner
 from ..data.loader import load_image_and_labels
 
@@ -29,6 +30,8 @@ def evaluate_hybrid(
     exclude: set,
     conf: float = 0.1,
 ) -> Tuple[dict, List[DetectionResult]]:
+    set_seeds()
+
     all_images = sorted(image_dir.glob("*.png")) + sorted(image_dir.glob("*.jpg"))
     results = []
 

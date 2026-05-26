@@ -23,7 +23,7 @@ def load_yolo_labels(label_path: Path) -> np.ndarray:
 def load_image_and_labels(image_path: Path, label_dir: Path) -> Tuple[np.ndarray, np.ndarray]:
     label_path = label_dir / f"{image_path.stem}.txt"
     if not label_path.exists():
-        matching_label_files = list(label_dir.glob(f"*-{image_path.stem}.txt"))
+        matching_label_files = sorted(label_dir.glob(f"*-{image_path.stem}.txt"))
         if not matching_label_files:
             raise FileNotFoundError(f"Label file for {image_path.name} not found in {label_dir}")
         label_path = matching_label_files[0]
@@ -87,7 +87,7 @@ class GOSTDataset(Dataset):
             with open(label_file) as f:
                 labels = [list(map(float, line.strip().split())) for line in f if line.strip()]
         else:
-            label_files = list(self.label_dir.glob(f"*-{img_path.stem}.txt"))
+            label_files = sorted(self.label_dir.glob(f"*-{img_path.stem}.txt"))
             if label_files:
                 with open(label_files[0]) as f:
                     labels = [list(map(float, line.strip().split())) for line in f if line.strip()]

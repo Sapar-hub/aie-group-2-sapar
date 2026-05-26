@@ -1,3 +1,6 @@
+import random
+
+import numpy as np
 import torch
 import torchvision
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
@@ -6,7 +9,6 @@ from torchvision.transforms import functional as F
 from pathlib import Path
 import logging
 from typing import List, Optional, Tuple
-import numpy as np
 import cv2
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,17 @@ class RCNNModel:
                             val_loss += sum(v.item() for v in d.values())
         return val_loss / len(val_loader) if len(val_loader) > 0 else 0.0
 
+    def set_seeds(self, seed: int = 42, deterministic: bool = True):
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+        if deterministic:
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+            torch.use_deterministic_algorithms(True)
+
     def train(
         self,
         train_loader,
@@ -71,7 +84,10 @@ class RCNNModel:
         num_epochs: int = 30,
         lr: float = 0.001,
         patience: int = 5,
+        seed: int = 42,
     ):
+        self.set_seeds(seed=seed)
+
         if self.model is None:
             self.build()
 

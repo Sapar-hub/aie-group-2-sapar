@@ -10,6 +10,7 @@ from .metrics import (
     compute_metrics,
     yolo_to_pixel,
 )
+from . import set_seeds
 from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
@@ -42,17 +43,19 @@ def evaluate_yolo(
     model: YOLO,
     image_dir: Path,
     label_dir: Path,
-    donors: set,
+    exclude: set,
     conf_thresholds: Optional[List[float]] = None,
 ) -> Tuple[dict, List[DetectionResult]]:
+    set_seeds()
+
     if conf_thresholds is None:
         conf_thresholds = [0.05, 0.1, 0.2, 0.3]
 
     all_images = sorted(image_dir.glob("*.png")) + sorted(image_dir.glob("*.jpg"))
-    n_non_donors = len(all_images) - len(donors)
+    n_eval = len(all_images) - len(exclude)
     logger.info(
-        "Evaluating on %d images (%d non-donors after filtering)",
-        len(all_images), n_non_donors,
+        "Evaluating on %d images (%d after filtering)",
+        len(all_images), n_eval,
     )
 
     best_conf, best_f1, best_metrics, best_results = 0.1, 0.0, None, None
@@ -60,6 +63,9 @@ def evaluate_yolo(
     for conf in conf_thresholds:
         results_list = []
         for img_path in all_images:
+            if img_path.name in exclude:
+                continue
+
             img, labels = load_image_and_labels(img_path, label_dir)
             h, w = img.shape[:2]
 
@@ -80,11 +86,10 @@ def evaluate_yolo(
                 found=pred_bbox is not None,
             ))
 
-        filtered = [r for r in results_list if r.image_name not in donors]
-        metrics = compute_metrics(filtered, iou_threshold=0.5)
-        n_eval = len(filtered)
+        metrics = compute_metrics(results_list, iou_threshold=0.5)
+        n_eval = len(results_list)
         logger.info(
-            "conf=%.2f | F1=%.3f  P=%.3f  R=%.3f  IoU=%.3f  det_rate=%.2f  (eval on %d non-donors)",
+            "conf=%.2f | F1=%.3f  P=%.3f  R=%.3f  IoU=%.3f  det_rate=%.2f  (eval on %d non-excluded)",
             conf, metrics["f1"], metrics["precision"], metrics["recall"],
             metrics.get("iou_mean", 0), metrics.get("detection_rate", 0), n_eval,
         )
@@ -93,7 +98,7 @@ def evaluate_yolo(
             best_f1 = metrics["f1"]
             best_conf = conf
             best_metrics = metrics
-            best_results = filtered
+            best_results = results_list
 
     logger.info("Best conf=%.2f (F1=%.3f)", best_conf, best_f1)
     return best_metrics, best_results

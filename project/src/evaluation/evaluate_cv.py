@@ -14,6 +14,7 @@ from .metrics import (
     print_metrics,
     yolo_to_pixel,
 )
+from . import set_seeds
 from ..models.cv_baseline import CVBaselineDetector
 from ..data.loader import load_image_and_labels
 
@@ -26,6 +27,8 @@ def evaluate_cv(
     label_dir: Path,
     exclude: set,
 ) -> Tuple[dict, List[DetectionResult]]:
+    set_seeds()
+
     all_images = sorted(image_dir.glob("*.png")) + sorted(image_dir.glob("*.jpg"))
     results = []
 

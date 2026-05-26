@@ -75,7 +75,7 @@ def compute_metrics(results: List[DetectionResult], iou_threshold: float = 0.5) 
         "iou_median": np.median(ious),
         "iou_max": np.max(ious),
         "iou_min": np.min(ious),
-        "iou_found_mean": np.mean(ious_found) if ious_found else 0.0,
+        "iou_found_mean": np.mean(ious_found) if ious_found else float("nan"),
         "iou_at_threshold": sum(1 for i in ious if i >= iou_threshold) / total,
         "precision": precision,
         "recall": recall,

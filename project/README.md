@@ -66,9 +66,9 @@ project/
 │   └── .env.example              # Шаблон секретов
 ├── data/
 │   ├── images/test/              # 49 реальных изображений
-│   ├── images/train/             # 500 синтетических
+│   ├── images/train_v4/          # 500 синтетических
 │   ├── labels/test/              # 49 YOLO-разметок
-│   ├── labels/train/             # 500 синтетических разметок
+│   ├── labels/train_v4/          # 500 синтетических разметок
 │   └── gost_stamp.yaml           # YOLO dataset config
 ├── notebooks/
 │   ├── exp01_eda_baseline.ipynb
@@ -88,10 +88,12 @@ project/
 │   ├── test_metrics.py           # 10 тестов метрик
 │   └── test_models.py            # 6 тестов моделей
 ├── artifacts/
-│   ├── models/                   # Веса (фактически в yolo/exp01/)
-│   ├── figures/                  # 7 графиков
-│   ├── metrics/                  # EDA summary, YOLO results
-│   └── yolo/exp04/weights/       # best.pt (6 MB, 50 эпох)
+│   ├── models/                   # SYMLINK → yolo/v4/weights/best.pt
+│   ├── yolo/v4/weights/          # best.pt (6 MB, 50 эпох, v4 current)
+│   ├── yolo/legacy/              # v3, v2, v1, rcnn_v2 (исторические)
+│   ├── rcnn/v4/                  # rcnn_best.pth (Faster R-CNN v4)
+│   ├── figures/                  # графики (v4 + cross-model)
+│   └── metrics/                  # EDA summary, v4 results, comparison
 └── scripts/
     ├── generate_synthetic.py      # CLI: генерация синтетического датасета
     └── train_all.py               # CLI: обучение YOLO + Faster R-CNN
@@ -114,10 +116,9 @@ project/
 
 ```bash
 cd project
-python -m venv .venv
+uv venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 4.3. Генерация синтетических данных
@@ -150,11 +151,25 @@ python -m scripts.train_all
 
 ### 4.5. Запуск сервиса
 
-Перед запуском скопируйте веса YOLO в ожидаемую директорию:
+Перед запуском создайте/обновите symlink на актуальную модель:
 
 ```bash
-cp artifacts/yolo/exp04/weights/best.pt artifacts/models/best.pt
+ln -sf ../yolo/v4/weights/best.pt artifacts/models/best.pt
+```
+
+**Вариант A — через entry point (после `uv sync`):**
+```bash
+gost-detect
+```
+
+**Вариант B — напрямую:**
+```bash
 python -m src.api.main
+```
+
+Переключение на другую версию (например, v3):
+```bash
+ln -sf ../yolo/legacy/v3/weights/best.pt artifacts/models/best.pt
 ```
 
 Сервис на `http://localhost:8000`, Swagger UI на `/docs`.
@@ -172,10 +187,10 @@ curl -X POST -F "file=@чертеж.png" http://localhost:8000/predict
 
 ```bash
 cd project
-pytest tests -v
+uv run pytest tests -v
 ```
 
-**Результат:** 15 passed, 1 skipped (RCNN — требует torch/torchvision)
+**Результат:** 18 passed (при наличии torch/torchvision)
 
 ---
 
@@ -183,10 +198,10 @@ pytest tests -v
 
 | Модель | Версия данных | Выборка | IoU | Prec | Recall | F1 | Det% |
 |--------|---------------|---------|-----|------|--------|-----|------|
-| CV Baseline (без position map) | v4 | 35 real | 0.612 | 0.793 | 0.657 | **0.719** | 82.9% |
+| CV Baseline (без position map) | v4 | 35 real | 0.640 | 0.774 | 0.686 | **0.727** | 88.6% |
 | YOLOv8n v3 (top-1 conf) | v3: 250 GOST + 250 CP | 35 real | 0.692 | 0.964 | 0.771 | **0.857** | 80.0% |
 | Hybrid v3 (v3 + CV refine) | v3 data | 35 real | 0.692 | 0.964 | 0.771 | **0.857** | 80.0% |
-| YOLOv8n v4 (top-1 conf) | v4: 50 GOST + 250 CP + 200 bg | 35 real | 0.502 | 0.833 | 0.571 | 0.678 | 68.6% |
+| YOLOv8n v4 (top-1 conf) | v4: 50 GOST + 250 CP + 200 bg | 35 real | 0.579 | 0.885 | 0.657 | 0.754 | 74.3% |
 | **Hybrid v4 (v4 + CV refine)** | v4 data | 35 real | 0.527 | 0.875 | 0.600 | **0.712** | 68.6% |
 | Faster R-CNN v4 | v4 | 35 real | 0.396 | 1.000 | 0.457 | 0.627 | 45.7% |
 
