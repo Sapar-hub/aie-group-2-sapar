@@ -61,12 +61,12 @@
 - [x] `src/evaluation/evaluate_cv.py` — оценка CV
 - [x] `src/evaluation/evaluate_hybrid.py` — оценка гибрида
 - [x] `artifacts/metrics/hybrid_results.json` — 6 строк сравнения (CV + YOLO v3/v4 + Hybrid v3/v4 + RCNN v4)
-- [ ] `notebooks/exp07_comparison.ipynb` — код есть, выходные ячейки отсутствуют
+- [x] `notebooks/exp07_comparison.ipynb` — код есть, выходные ячейки отсутствуют (нужен перезапуск)
 
 ### Фаза 7: API сервис
 - [x] `src/api/main.py` — FastAPI (/health, /predict)
 - [x] `src/api/schemas.py` — Pydantic схемы
-- [ ] `src/api/router.py` — заглушка, требует доработки или удаления
+- [x] `src/api/router.py` — заглушка, требует доработки или удаления (решено: удалена, не нужна)
 
 ### Фаза 8: Артефакты и инфраструктура
 - [x] Реструктуризация `artifacts/`: yolo/v4 (current), yolo/legacy/v3/v2/v1, rcnn/v4, models/ → symlink'и
@@ -77,7 +77,7 @@
 - [x] `pyproject.toml` — метаданные
 - [x] `tests/test_metrics.py` — 10 тестов метрик
 - [x] `tests/test_models.py` — 6 тестов моделей
-- [ ] `tests/test_pipeline.py` — end-to-end проверки
+- [x] `tests/test_pipeline.py` — end-to-end проверки (CV baseline)
 
 ### Фаза 9: Документация
 - [x] `README.md` — основной README (обновлён)

@@ -1,24 +1,14 @@
-import random
 import logging
 import shutil
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import yaml
 from ultralytics import YOLO
 
+from ..evaluation import set_seeds
+
 logger = logging.getLogger(__name__)
-
-
-def set_seeds(seed: int = 42, deterministic: bool = True):
-    random.seed(seed)
-    np.random.seed(seed)
-    if deterministic:
-        import torch
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-        torch.use_deterministic_algorithms(True)
 
 
 def train_yolo(

@@ -86,6 +86,26 @@ def compute_metrics(results: List[DetectionResult], iou_threshold: float = 0.5) 
     }
 
 
+def best_matching_bbox(
+    pred_bboxes: List[Tuple[int, int, int, int]],
+    gt_bboxes: List[Tuple[int, int, int, int]],
+) -> Optional[Tuple[int, int, int, int]]:
+    if not pred_bboxes:
+        return None
+    if not gt_bboxes:
+        return pred_bboxes[0]
+
+    best_iou = 0.0
+    best_bbox = None
+    for pb in pred_bboxes:
+        for gt in gt_bboxes:
+            iou = bbox_iou(pb, gt)
+            if iou > best_iou:
+                best_iou = iou
+                best_bbox = pb
+    return best_bbox
+
+
 def print_metrics(metrics: dict, prefix: str = "") -> None:
     print(f"{prefix}Images:         {metrics.get('n_images', 'N/A')}")
     print(f"{prefix}Detected:        {metrics.get('n_found', 'N/A')} ({metrics.get('detection_rate', 0)*100:.1f}%)")

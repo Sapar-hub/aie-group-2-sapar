@@ -7,6 +7,7 @@ from ultralytics import YOLO
 from .metrics import (
     DetectionResult,
     bbox_iou,
+    best_matching_bbox,
     compute_metrics,
     yolo_to_pixel,
 )
@@ -14,29 +15,6 @@ from . import set_seeds
 from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
-
-
-def _best_matching_bbox(
-    pred_boxes, gt_bboxes: List[Tuple[int, int, int, int]]
-) -> Optional[Tuple[int, int, int, int]]:
-    if not pred_boxes:
-        return None
-    if not gt_bboxes:
-        box = pred_boxes[0]
-        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-        return (x1, y1, x2 - x1, y2 - y1)
-
-    best_iou = 0.0
-    best_bbox = None
-    for box in pred_boxes:
-        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-        pred_bbox = (x1, y1, x2 - x1, y2 - y1)
-        for gt in gt_bboxes:
-            iou = bbox_iou(pred_bbox, gt)
-            if iou > best_iou:
-                best_iou = iou
-                best_bbox = pred_bbox
-    return best_bbox
 
 
 def evaluate_yolo(
@@ -72,9 +50,13 @@ def evaluate_yolo(
             gt_bboxes = [yolo_to_pixel(tuple(label), w, h) for label in labels]
 
             preds = model(img, conf=conf, verbose=False)
-            pred_boxes = preds[0].boxes if preds[0].boxes else []
 
-            pred_bbox = _best_matching_bbox(pred_boxes, gt_bboxes)
+            raw_boxes = []
+            if preds[0].boxes:
+                for box in preds[0].boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    raw_boxes.append((x1, y1, x2 - x1, y2 - y1))
+            pred_bbox = best_matching_bbox(raw_boxes, gt_bboxes)
 
             gt_bbox = gt_bboxes[0] if gt_bboxes else None
             iou = bbox_iou(pred_bbox, gt_bbox) if pred_bbox and gt_bbox else 0.0

@@ -10,6 +10,7 @@ import numpy as np
 from .metrics import (
     DetectionResult,
     bbox_iou,
+    best_matching_bbox,
     compute_metrics,
     print_metrics,
     yolo_to_pixel,
@@ -19,26 +20,6 @@ from ..models.rcnn_model import RCNNModel
 from ..data.loader import load_image_and_labels
 
 logger = logging.getLogger(__name__)
-
-
-def _best_matching_bbox(
-    pred_bboxes: List[Tuple[int, int, int, int]],
-    gt_bboxes: List[Tuple[int, int, int, int]],
-) -> Optional[Tuple[int, int, int, int]]:
-    if not pred_bboxes:
-        return None
-    if not gt_bboxes:
-        return pred_bboxes[0]
-
-    best_iou = 0.0
-    best_bbox = None
-    for pb in pred_bboxes:
-        for gt in gt_bboxes:
-            iou = bbox_iou(pb, gt)
-            if iou > best_iou:
-                best_iou = iou
-                best_bbox = pb
-    return best_bbox
 
 
 def evaluate_rcnn(
@@ -74,7 +55,7 @@ def evaluate_rcnn(
             gt_bboxes = [yolo_to_pixel(tuple(label), w, h) for label in labels]
 
             pred_bboxes = model.predict(img, conf=conf)
-            pred_bbox = _best_matching_bbox(pred_bboxes, gt_bboxes)
+            pred_bbox = best_matching_bbox(pred_bboxes, gt_bboxes)
 
             gt_bbox = gt_bboxes[0] if gt_bboxes else None
             iou = bbox_iou(pred_bbox, gt_bbox) if pred_bbox is not None and gt_bbox is not None else 0.0
