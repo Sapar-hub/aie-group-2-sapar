@@ -1,4 +1,0 @@
-test_11.png
-test_17.png
-test_23.png
-test_42.png

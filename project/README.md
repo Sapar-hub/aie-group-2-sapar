@@ -214,9 +214,10 @@ uv run pytest tests -v
 >   [`data/LEAKAGE.md`](data/LEAKAGE.md).
 > - **v4** (текущая, сложнее): 50 GOST + 250 copy-paste + 200 GOST-on-real-background.
 >   Все актуальные оценки (YOLO v4, Hybrid v4) используют эту версию.
-> - **Hybrid v4** улучшает YOLO v4 на +0.034 F1 (0.678 → 0.712) за счёт слияния
->   CNN-уверенности с CV-признаками (aspect ratio, edge density).
->   v3 не нуждается в уточнении — модель уже насыщена.
+> - **Hybrid v4** не улучшает YOLO v4 (F1 = 0.712 vs 0.754) — CV-уточнение поверх
+>   YOLO v4 снижает F1 на −0.042. Причина: сложная смесь v4 (GOST-on-real-bg) уже
+>   не даёт shortcut'ов, и CV-фильтрация только теряет истинные detection'ы.
+>   v3 не нуждался в уточнении — модель была насыщена за счёт shortcut'ов.
 
 ---
 
