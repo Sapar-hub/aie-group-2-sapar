@@ -92,7 +92,7 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 - Данные: 500 synthetic train / 49 real val
 - Параметры: 30 epochs, batch=4 (effective 8), Adam (backbone 1e-4, head 1e-3), imgsz=800, gradient clipping, early stopping
 - **Результат (v2, 45 non-donor):** IoU mean = 0.731, F1 = 0.881 (на v2 — не сопоставим с v4)
-- **Результат (v4, 35 non-donor, non-val):** IoU mean = 0.396, Precision = 1.000, Recall = 0.457, F1 = 0.627, Detection rate = 45.7%
+- **Результат (v4, 35 non-donor, non-val):** IoU mean = 0.409, Precision = 1.000, Recall = 0.457, F1 = 0.627, Detection rate = 45.7%
 
 ### 4.4. Hybrid (CNN + CV Refine)
 - YOLO v4 → CV уточнение с fused scoring:
@@ -103,7 +103,7 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 
 **Результат (v4, 35 non-donor, non-val):** IoU mean = 0.527, Precision = 0.875, Recall = 0.600, F1 = 0.712 (−0.042 к YOLO v4)
 
-**Гибрид на v3:** F1 = 0.757 (−0.100) — подтверждает "white canvas shortcut": уточнение не помогает, когда CNN уже идеально точен за счёт shortcut'а.
+**Гибрид на v3:** F1 = 0.857 (−0.014 к YOLO v3 top-1) — подтверждает "white canvas shortcut": уточнение не помогает, когда CNN уже идеально точен за счёт shortcut'а.
 
 ---
 
@@ -123,8 +123,8 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 | CV Baseline (без pos map) | v4 | **0.640** | 0.774 | **0.686** | **0.727** | **88.6%** |
 | YOLOv8n (top-1) | v4 | 0.579 | 0.885 | 0.657 | 0.754 | 74.3% |
 | **Hybrid v4** (YOLO+CV) | v4 | 0.527 | **0.875** | 0.600 | **0.712** | 68.6% |
-| Faster R-CNN v4 | v4 | 0.396 | **1.000** | 0.457 | 0.627 | 45.7% |
-| YOLOv8n (top-1) | v3* | 0.692 | 0.964 | 0.771 | 0.857 | 80.0% |
+| Faster R-CNN v4 | v4 | 0.409 | **1.000** | 0.457 | 0.627 | 45.7% |
+| YOLOv8n (top-1) | v3* | 0.692 | 1.000 | 0.771 | 0.871 | 77.1% |
 
 > \* v3 невоспроизводим — см. [data/LEAKAGE.md](data/LEAKAGE.md)
 

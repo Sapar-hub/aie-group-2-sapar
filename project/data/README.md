@@ -74,7 +74,7 @@ Copy-paste штампы вырезаются **только из 4 изобра�
 - **Тест:** 35 реальных (4 новых донора + 10 новых val исключены)
 - **Метрики (YOLO v4 top-1):** IoU 0.579, Precision 0.885, Recall 0.657, F1 0.754
 - **Метрики (Hybrid v4):** IoU 0.527, Precision 0.875, Recall 0.600, F1 0.712
-- **Метрики (RCNN v4):** IoU 0.396, Precision 1.000, Recall 0.457, F1 0.627, Det. rate 45.7%
+- **Метрики (RCNN v4):** IoU 0.409, Precision 1.000, Recall 0.457, F1 0.627, Det. rate 45.7%
 
 ## Формат разметки
 

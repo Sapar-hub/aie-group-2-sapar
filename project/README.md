@@ -199,11 +199,11 @@ uv run pytest tests -v
 | Модель | Версия данных | Выборка | IoU | Prec | Recall | F1 | Det% |
 |--------|---------------|---------|-----|------|--------|-----|------|
 | CV Baseline (без position map) | v4 | 35 real | 0.640 | 0.774 | 0.686 | **0.727** | 88.6% |
-| YOLOv8n v3 (top-1 conf) | v3: 250 GOST + 250 CP | 35 real | 0.692 | 0.964 | 0.771 | **0.857** | 80.0% |
+| YOLOv8n v3 (top-1 conf) | v3: 250 GOST + 250 CP | 35 real | 0.692 | 1.000 | 0.771 | **0.871** | 77.1% |
 | Hybrid v3 (v3 + CV refine) | v3 data | 35 real | 0.692 | 0.964 | 0.771 | **0.857** | 80.0% |
 | YOLOv8n v4 (top-1 conf) | v4: 50 GOST + 250 CP + 200 bg | 35 real | 0.579 | 0.885 | 0.657 | 0.754 | 74.3% |
 | **Hybrid v4 (v4 + CV refine)** | v4 data | 35 real | 0.527 | 0.875 | 0.600 | **0.712** | 68.6% |
-| Faster R-CNN v4 | v4 | 35 real | 0.396 | 1.000 | 0.457 | 0.627 | 45.7% |
+| Faster R-CNN v4 | v4 | 35 real | 0.409 | 1.000 | 0.457 | 0.627 | 45.7% |
 
 **Версии данных:**
 > - **v3** (clean baseline): 250 GOST + 250 copy-paste на независимых фонах.
