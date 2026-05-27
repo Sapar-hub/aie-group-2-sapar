@@ -61,9 +61,12 @@ project/
 ├── report.md                     # Отчёт
 ├── self-checklist.md             # Чеклист
 ├── pyproject.toml                # Упаковка Python
-├── configs/
-│   ├── config.yaml               # Основной конфиг
-│   └── .env.example              # Шаблон секретов
+    ├── Dockerfile                    # Контейнеризация (multi-stage)
+    ├── .dockerignore                 # Исключения для Docker build
+    ├── docker-compose.yml            # Оркестрация с healthcheck
+    ├── configs/
+    │   ├── config.yaml               # Основной конфиг
+    │   └── .env.example              # Шаблон секретов
 ├── data/
 │   ├── images/test/              # 49 реальных изображений
 │   ├── images/train_v4/          # 500 синтетических
@@ -167,20 +170,31 @@ gost-detect
 python -m src.api.main
 ```
 
+**Вариант C — Docker (для сервера):**
+```bash
+docker compose build
+docker compose up -d
+```
+
+Сервис будет доступен на `http://localhost:8000`, Swagger UI на `/docs`.
+
 Переключение на другую версию (например, v3):
 ```bash
 ln -sf ../yolo/legacy/v3/weights/best.pt artifacts/models/best.pt
 ```
 
-Сервис на `http://localhost:8000`, Swagger UI на `/docs`.
+Сервис на `http://localhost:8000`, корень `/` сразу перенаправляет на `/docs`.
 
 **Эндпоинты:**
+- `GET /` — редирект на Swagger UI (`/docs`)
 - `GET /health` — проверка работоспособности
-- `POST /predict` — загрузка изображения, возвращает bbox штампа и уверенность
+- `POST /predict` — загрузка изображения, возвращает bbox и уверенность в JSON
+- `POST /predict/image` — загрузка изображения, возвращает JPG с нарисованным bbox
 
 Пример:
 ```bash
 curl -X POST -F "file=@чертеж.png" http://localhost:8000/predict
+curl -X POST -F "file=@чертеж.png" http://localhost:8000/predict/image > result.jpg
 ```
 
 ### 4.6. Тестирование
@@ -234,5 +248,5 @@ uv run pytest tests -v
 
 ## 7. Ограничения и дальнейшая работа
 
-- Модели обучаются на 49 изображениях + синтетике — данные ограничены
+- 35 тестовых изображений — перекрывающиеся доверительные интервалы между моделями
 - В дальнейшем: больше данных, сегментация штампов, OCR текста в штампах

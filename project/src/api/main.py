@@ -7,6 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import RedirectResponse, Response
 
 from .schemas import HealthResponse, PredictionResponse, BoundingBox
 
@@ -190,9 +191,72 @@ async def predict(file: UploadFile = File(...), model_name: str = "auto"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/predict/image")
+async def predict_image(file: UploadFile = File(...), model_name: str = "auto"):
+    if model_name not in VALID_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model_name '{
+                model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
+        )
+
+    logger.info(f"Received predict/image request: {file.filename}, model_name={model_name}")
+
+    try:
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if image is None:
+            raise HTTPException(status_code=400, detail="Could not decode image")
+
+        h, w = image.shape[:2]
+        logger.info(f"Image shape: {w}x{h}")
+
+        if model_name == "cv":
+            from ..models.cv_baseline import CVBaselineDetector
+            cv_detector = CVBaselineDetector()
+            bbox, conf = _predict_cv(cv_detector, image)
+            used_model = "cv_baseline"
+        elif model_name == "yolo":
+            if model_type != "yolo":
+                raise HTTPException(status_code=400, detail="YOLO model not loaded at startup")
+            bbox, conf = _predict_yolo(model, image)
+            used_model = "yolo"
+        else:
+            from ..models.cv_baseline import CVBaselineDetector
+            cv_detector = CVBaselineDetector()
+            bbox, conf = _predict_cv(cv_detector, image)
+            used_model = "cv_baseline"
+
+            if bbox is None and model_type == "yolo":
+                logger.info("CV baseline: no stamp detected, trying YOLO")
+                bbox, conf = _predict_yolo(model, image)
+                used_model = "yolo"
+
+        if bbox is None:
+            raise HTTPException(status_code=404, detail=f"No stamp detected (model: {used_model})")
+
+        x, y, w, h = bbox.x, bbox.y, bbox.width, bbox.height
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 3)
+        cv2.putText(image, f"{used_model} {conf:.2f}", (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
+        logger.info(f"{used_model} detection: bbox={bbox}, conf={conf:.3f}")
+
+        _, buf = cv2.imencode(".jpg", image)
+        return Response(content=buf.tobytes(), media_type="image/jpeg")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Predict image error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 def root():
-    return {"message": "GOST Stamp Detector API", "docs": "/docs"}
+    return RedirectResponse(url="/docs")
 
 
 def main():
