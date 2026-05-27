@@ -134,8 +134,7 @@ async def predict(file: UploadFile = File(...), model_name: str = "auto"):
     if model_name not in VALID_MODELS:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid model_name '{
-                model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
+            detail=f"Invalid model_name '{model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
         )
 
     logger.info(f"Received prediction request: {file.filename}, model_name={model_name}")
@@ -196,8 +195,7 @@ async def predict_image(file: UploadFile = File(...), model_name: str = "auto"):
     if model_name not in VALID_MODELS:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid model_name '{
-                model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
+            detail=f"Invalid model_name '{model_name}'. Must be one of: {', '.join(sorted(VALID_MODELS))}",
         )
 
     logger.info(f"Received predict/image request: {file.filename}, model_name={model_name}")
