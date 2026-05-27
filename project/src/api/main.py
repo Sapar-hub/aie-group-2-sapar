@@ -6,10 +6,15 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import torch
+import ultralytics.nn.tasks
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import RedirectResponse, Response
+from torch.serialization import add_safe_globals
 
 from .schemas import HealthResponse, PredictionResponse, BoundingBox
+
+add_safe_globals([ultralytics.nn.tasks.DetectionModel])
 
 logging.basicConfig(
     level=logging.INFO,

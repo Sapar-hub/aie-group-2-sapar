@@ -46,7 +46,7 @@ class RCNNModel:
         if self.model is None:
             self.build()
         logger.info(f"Loading RCNN weights from {weights_path}")
-        self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
+        self.model.load_state_dict(torch.load(weights_path, map_location=self.device, weights_only=False))
         self.model.eval()
 
     def evaluate(self, val_loader) -> float:
