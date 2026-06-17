@@ -14,12 +14,12 @@ Detects GOST-standard stamps on engineering drawings using a hybrid deep learnin
 
 | Approach | IoU | F1 | Detection Rate |
 |----------|-----|-----|---------------|
-| CV Baseline (OpenCV contours) | 0.330 | 0.490 | 49% |
-| **YOLOv8n** | **0.880** | **1.000** | **100%** |
-| Faster R-CNN | — | — | ⏳ Pending |
-| Hybrid (YOLO + CV refine) | — | — | ⏳ Pending |
+| CV Baseline (OpenCV v4) | 0.640 | 0.727 | 88.6% |
+| **YOLOv8n (v4)** | **0.579** | **0.754** | **74.3%** |
+| Faster R-CNN (v4) | 0.409 | 0.627 | 45.7% |
+| Hybrid (v4 + CV refine) | 0.527 | 0.712 | 68.6% |
 
-YOLOv8n achieves **IoU 0.88** with **100% detection rate** and is deployed as a **FastAPI** service at `/predict`.
+YOLOv8n achieves the best balance (F1=0.754) and is deployed as a **FastAPI** service at `/predict`.
 
 📁 [`project/`](project/) — code, notebooks, API, report
 
